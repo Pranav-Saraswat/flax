@@ -174,11 +174,11 @@ class CheckpointsTest(parameterized.TestCase):
     check_eq(new_object, test_object)
 
     os.chdir(os.path.dirname(tmp_dir))
-    rel_tmp_dir = './' + os.path.basename(tmp_dir)
+    rel_tmp_dir = f'./{os.path.basename(tmp_dir)}'
     checkpoints.save_checkpoint(rel_tmp_dir, test_object, 3, keep=1)
     new_object = checkpoints.restore_checkpoint(rel_tmp_dir, test_object0)
     check_eq(new_object, test_object)
-    non_norm_dir_path = tmp_dir + '//'
+    non_norm_dir_path = f'{tmp_dir}//'
     checkpoints.save_checkpoint(non_norm_dir_path, test_object, 4, keep=1)
     new_object = checkpoints.restore_checkpoint(non_norm_dir_path, test_object0)
     check_eq(new_object, test_object)
@@ -278,7 +278,6 @@ class CheckpointsTest(parameterized.TestCase):
   def test_save_restore_checkpoints_target_empty(self, use_orbax):
     config.update('flax_use_orbax_checkpointing', use_orbax)
     tmp_dir = self.create_tempdir().full_path
-    test_object0 = {}
     test_object1 = []
     # Orbax returns ValueError if the target is empty, but legacy Flax doesn't.
     if use_orbax:
@@ -287,6 +286,7 @@ class CheckpointsTest(parameterized.TestCase):
     else:
       checkpoints.save_checkpoint(tmp_dir, test_object1, 0)
       new_object = checkpoints.restore_checkpoint(tmp_dir, target=None)
+      test_object0 = {}
       check_eq(new_object, test_object0)
       checkpoints.save_checkpoint(tmp_dir, test_object0, 1)
       new_object = checkpoints.restore_checkpoint(tmp_dir, target=test_object1)
@@ -361,9 +361,9 @@ class CheckpointsTest(parameterized.TestCase):
     io.makedirs(os.path.join(tmp_dir, 'test_tmp_gda'))
 
     for step in steps:
-      with io.GFile(os.path.join(tmp_dir, 'test_' + str(step)), 'w') as f:
-        f.write('test_' + str(step))
-      io.makedirs(os.path.join(tmp_dir, 'test_' + str(step) + '_gda'))
+      with io.GFile(os.path.join(tmp_dir, f'test_{str(step)}'), 'w') as f:
+        f.write(f'test_{str(step)}')
+      io.makedirs(os.path.join(tmp_dir, f'test_{str(step)}_gda'))
 
     self.assertEqual(
         checkpoints.available_steps(tmp_dir, 'test_', step_type=step_type),

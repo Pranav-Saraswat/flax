@@ -55,18 +55,12 @@ class FrozenDict(Mapping[K, V]):
   def __init__(self, *args, __unsafe_skip_copy__=False, **kwargs):  # pylint: disable=invalid-name
     # make sure the dict is as
     xs = dict(*args, **kwargs)
-    if __unsafe_skip_copy__:
-      self._dict = xs
-    else:
-      self._dict = _prepare_freeze(xs)
-
+    self._dict = xs if __unsafe_skip_copy__ else _prepare_freeze(xs)
     self._hash = None
 
   def __getitem__(self, key):
     v = self._dict[key]
-    if isinstance(v, dict):
-      return FrozenDict(v)
-    return v
+    return FrozenDict(v) if isinstance(v, dict) else v
 
   def __setitem__(self, key, value):
     raise ValueError('FrozenDict is immutable.')
@@ -94,10 +88,8 @@ class FrozenDict(Mapping[K, V]):
       rep = ''
       for key, val in x.items():
         rep += f'{key}: {pretty_dict(val)},\n'
-      if rep:
-        return '{\n' + _indent(rep, num_spaces) + '}'
-      else:
-        return '{}'
+      return '{\n' + _indent(rep, num_spaces) + '}' if rep else '{}'
+
     return f'FrozenDict({pretty_dict(self._dict)})'
 
   def __hash__(self):
@@ -155,15 +147,14 @@ class FrozenDict(Mapping[K, V]):
       A flattened version of this FrozenDict instance.
     """
     sorted_keys = sorted(self._dict)
-    return tuple(
-        [(jax.tree_util.DictKey(k), self._dict[k]) for k in sorted_keys]
-    ), tuple(sorted_keys)
+    return tuple((jax.tree_util.DictKey(k), self._dict[k])
+                 for k in sorted_keys), tuple(sorted_keys)
 
   @classmethod
   def tree_unflatten(cls, keys, values):
     # data is already deep copied due to tree map mechanism
     # we can skip the deep copy in the constructor
-    return cls({k: v for k, v in zip(keys, values)}, __unsafe_skip_copy__=True)
+    return cls(dict(zip(keys, values)), __unsafe_skip_copy__=True)
 
 
 def _prepare_freeze(xs: Any) -> Any:
@@ -210,10 +201,7 @@ def unfreeze(x: Union[FrozenDict, Dict[str, Any]]) -> Dict[Any, Any]:
     # uses an optimized C implementation.
     return jax.tree_util.tree_map(lambda y: y, x._dict)  # type: ignore
   elif isinstance(x, dict):
-    ys = {}
-    for key, value in x.items():
-      ys[key] = unfreeze(value)
-    return ys
+    return {key: unfreeze(value) for key, value in x.items()}
   else:
     return x
 
@@ -283,18 +271,15 @@ def pretty_repr(x: Any, num_spaces: int = 4) -> str:
 
   if isinstance(x, FrozenDict):
     return x.pretty_repr()
-  else:
-    def pretty_dict(x):
-      if not isinstance(x, dict):
-        return repr(x)
-      rep = ''
-      for key, val in x.items():
-        rep += f'{key}: {pretty_dict(val)},\n'
-      if rep:
-        return '{\n' + _indent(rep, num_spaces) + '}'
-      else:
-        return '{}'
-    return pretty_dict(x)
+  def pretty_dict(x):
+    if not isinstance(x, dict):
+      return repr(x)
+    rep = ''
+    for key, val in x.items():
+      rep += f'{key}: {pretty_dict(val)},\n'
+    return '{\n' + _indent(rep, num_spaces) + '}' if rep else '{}'
+
+  return pretty_dict(x)
 
 
 def _frozen_dict_state_dict(xs):
@@ -302,8 +287,7 @@ def _frozen_dict_state_dict(xs):
 
 
 def _restore_frozen_dict(xs, states):
-  diff = set(map(str, xs.keys())).difference(states.keys())
-  if diff:
+  if diff := set(map(str, xs.keys())).difference(states.keys()):
     raise ValueError('The target dict keys and state dict keys do not match,'
                    f' target dict contains keys {diff} which are not present in state dict '
                    f'at path {serialization.current_path()}')

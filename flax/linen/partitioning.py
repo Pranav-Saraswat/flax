@@ -323,8 +323,7 @@ def _is_mutable(axis_col: str) -> bool:
   Returns:
     Whether it is currently mutable.
   """
-  last = nn.module._context.module_stack[-1]  # pylint: disable=protected-access
-  if last:
+  if last := nn.module._context.module_stack[-1]:
     return last.is_mutable_collection(axis_col)
   else:
     return True

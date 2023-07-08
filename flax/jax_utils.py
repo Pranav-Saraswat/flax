@@ -159,10 +159,10 @@ def _scan_nd(body_fn, init, xs, n=1, unroll=(1,)):
   """
   if n == 1:
     return lax.scan(body_fn, init, xs, unroll=unroll[0])
-  else:
-    def scan_body(c, x):
-      return _scan_nd(body_fn, c, x, n=n-1, unroll=unroll[1:])
-    return lax.scan(scan_body, init, xs, unroll=unroll[0])
+  def scan_body(c, x):
+    return _scan_nd(body_fn, c, x, n=n-1, unroll=unroll[1:])
+
+  return lax.scan(scan_body, init, xs, unroll=unroll[0])
 
 
 def _invert_perm(perm):
@@ -289,8 +289,7 @@ def pad_shard_unpad(wrapped, static_argnums=(0,), static_argnames=(),
       return x.reshape(d, db, *shape)
 
     def maybe_pad(tree, actually_pad=True):
-      if not actually_pad: return tree  # For call-site convenience below.
-      return jax.tree_util.tree_map(pad, tree)
+      return tree if not actually_pad else jax.tree_util.tree_map(pad, tree)
 
     args = [maybe_pad(a, i not in static_argnums) for i, a in enumerate(args)]
     kw = {k: maybe_pad(v, k not in static_argnames) for k, v in kw.items()}
@@ -299,6 +298,7 @@ def pad_shard_unpad(wrapped, static_argnums=(0,), static_argnames=(),
     def unpad(x):
       # Transfer back before cutting, to reduce on-device shape diversity.
       return jax.device_get(x).reshape([np.prod(x.shape[:2]), *x.shape[2:]])[:b]
+
     return out if static_return else jax.tree_util.tree_map(unpad, out)
 
   return pad_shard_unpad_wrapper

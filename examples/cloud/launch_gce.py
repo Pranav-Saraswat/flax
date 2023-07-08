@@ -242,11 +242,10 @@ def main(_):
         if result.returncode == 0:
           break
         stderr = result.stderr.decode('utf8')
-        if 'connection refused' in stderr.lower():
-          print('(Connection refused - waiting a little longer...)')
-          time.sleep(20)
-        else:
+        if 'connection refused' not in stderr.lower():
           raise ValueError(f'Unknown error: {stderr}')
+        print('(Connection refused - waiting a little longer...)')
+        time.sleep(20)
       except ValueError as e:
         if 'HTTP 502' not in str(e):
           raise e
@@ -257,10 +256,10 @@ def main(_):
         time.sleep(20)
     if 'VM_READY_CMD' in os.environ:
       os.system(os.environ['VM_READY_CMD'])
-    if FLAGS.connect:
-      result = subprocess.run(login_args)
-      # SSH session has cleared previous message, print it again.
-      print_howto(login_args)
+  if FLAGS.connect:
+    result = subprocess.run(login_args)
+    # SSH session has cleared previous message, print it again.
+    print_howto(login_args)
 
 
 if __name__ == '__main__':

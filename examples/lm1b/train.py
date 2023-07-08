@@ -95,8 +95,9 @@ def compute_weighted_cross_entropy(logits,
     Tuple of scalar loss and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError("Incorrect shapes. Got shape %s logits and %s targets" %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f"Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets"
+    )
   vocab_size = logits.shape[-1]
   confidence = 1.0 - label_smoothing
   low_confidence = (1.0 - confidence) / (vocab_size - 1)
@@ -129,8 +130,9 @@ def compute_weighted_accuracy(logits, targets, weights=None):
     Tuple of scalar loss and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError("Incorrect shapes. Got shape %s logits and %s targets" %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f"Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets"
+    )
   loss = jnp.equal(jnp.argmax(logits, axis=-1), targets)
   normalizing_factor = np.prod(logits.shape[:-1])
   if weights is not None:
@@ -305,10 +307,10 @@ def evaluate(*, p_eval_step, params, eval_ds: tf.data.Dataset,
   eval_metrics = common_utils.get_metrics(eval_metrics)
   eval_metrics_sums = jax.tree_util.tree_map(jnp.sum, eval_metrics)
   eval_denominator = eval_metrics_sums.pop("denominator")
-  eval_summary = jax.tree_util.tree_map(
+  return jax.tree_util.tree_map(
       lambda x: x / eval_denominator,  # pylint: disable=cell-var-from-loop
-      eval_metrics_sums)
-  return eval_summary
+      eval_metrics_sums,
+  )
 
 
 def generate_prediction(*, p_pred_step, params,
@@ -344,10 +346,7 @@ def generate_prediction(*, p_pred_step, params,
       logging.info("Sample: %s", str(prediction))
       predictions.append(prediction)
 
-    # Save generated texts for tensorboard.
-    exemplars = ""
-    for prediction in predictions:
-      exemplars += f"{prediction}\n\n"
+    exemplars = "".join(f"{prediction}\n\n" for prediction in predictions)
   return exemplars
 
 
@@ -523,7 +522,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str):
           summary["learning_rate"] = lr
           summary["perplexity"] = jnp.clip(
               jnp.exp(summary["loss"]), a_max=1.0e4)
-          summary = {"train_" + k: v for k, v in summary.items()}
+          summary = {f"train_{k}": v for k, v in summary.items()}
           writer.write_scalars(step, summary)
           train_metrics = []
 
@@ -536,8 +535,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str):
           # (clipped) perplexity after averaging log-perplexitie
           eval_results["perplexity"] = jnp.clip(
               jnp.exp(eval_results["loss"]), a_max=1.0e4)
-          writer.write_scalars(
-              step, {"eval_" + k: v for k, v in eval_results.items()})
+          writer.write_scalars(step, {f"eval_{k}": v for k, v in eval_results.items()})
 
         with report_progress.timed("generate_text"):
           exemplars = generate_prediction(

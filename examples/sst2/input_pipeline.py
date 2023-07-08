@@ -228,7 +228,7 @@ class TextDataset:
       buffer_size = get_num_examples(dataset)
       dataset = dataset.shuffle(
           buffer_size, seed=shuffle_seed, reshuffle_each_iteration=True)
-    padded_shapes = {k: v for k, v in self.padded_shapes.items()}
+    padded_shapes = dict(self.padded_shapes.items())
     if fixed_pad_length is not None:
       padded_shapes['token_ids'] = fixed_pad_length
     return dataset.padded_batch(

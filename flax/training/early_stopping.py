@@ -67,7 +67,6 @@ class EarlyStopping(struct.PyTreeNode):
     if math.isinf(self.best_metric) or self.best_metric - metric > self.min_delta:
       return True, self.replace(best_metric=metric,
                                 patience_count=0)
-    else:
-      should_stop = self.patience_count >= self.patience or self.should_stop
-      return False, self.replace(patience_count=self.patience_count + 1,
-                                 should_stop=should_stop)
+    should_stop = self.patience_count >= self.patience or self.should_stop
+    return False, self.replace(patience_count=self.patience_count + 1,
+                               should_stop=should_stop)

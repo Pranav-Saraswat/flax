@@ -347,10 +347,7 @@ def decorator_lift_transform(transform, class_fn, *trafo_args,
   # Due to the ordering of method decorators, we must wrap the class_fn
   # with the module state management wrapper first to maintain Module state
   # correctly.
-  if isinstance(class_fn, tuple):
-    class_fns = class_fn
-  else:
-    class_fns = (class_fn,)
+  class_fns = class_fn if isinstance(class_fn, tuple) else (class_fn, )
   prewrapped_fns = [wrap_method_once(class_fn) for class_fn in class_fns]
   @functools.wraps(prewrapped_fns[0])
   def wrapped_fn(self, *args, **kwargs):
@@ -382,6 +379,7 @@ def decorator_lift_transform(transform, class_fn, *trafo_args,
             ' Modules that include other Modules passed as arguments.')
       module_scopes = module_scopes[0]
     return trafo_fn(module_scopes, *args, **kwargs)
+
   return wrapped_fn
 
 
@@ -1407,10 +1405,8 @@ def custom_vjp(fn: Callable[..., Any],
     A function with the same signature as `fn` with the custom vjp.
   """
   def shared_forward_fn(*args, needs_residual, **kwargs):
-    if needs_residual:
-      return forward_fn(*args, **kwargs)
-    else:
-      return fn(*args, ** kwargs)
+    return forward_fn(*args, **kwargs) if needs_residual else fn(*args, ** kwargs)
+
   return decorator_lift_transform(
       _custom_vjp_single_scope_fn, shared_forward_fn,
       backward_fn=backward_fn, grad_vars=grad_vars,

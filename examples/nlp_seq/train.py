@@ -126,7 +126,7 @@ def create_learning_rate_scheduler(
         ret *= jnp.maximum(0.0,
                            0.5 * (1.0 + jnp.cos(jnp.pi * (progress % 1.0))))
       else:
-        raise ValueError('Unknown factor %s.' % name)
+        raise ValueError(f'Unknown factor {name}.')
     return jnp.asarray(ret, dtype=jnp.float32)
 
   return step_fn
@@ -144,8 +144,9 @@ def compute_weighted_cross_entropy(logits, targets, weights=None):
     Tuple of scalar loss and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError('Incorrect shapes. Got shape %s logits and %s targets' %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f'Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets'
+    )
   onehot_targets = common_utils.onehot(targets, logits.shape[-1])
   loss = -jnp.sum(onehot_targets * nn.log_softmax(logits), axis=-1)
   normalizing_factor = onehot_targets.sum()
@@ -168,8 +169,9 @@ def compute_weighted_accuracy(logits, targets, weights=None):
     Tuple of scalar accuracy and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError('Incorrect shapes. Got shape %s logits and %s targets' %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f'Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets'
+    )
   loss = jnp.equal(jnp.argmax(logits, axis=-1), targets)
   normalizing_factor = np.prod(logits.shape[:-1])
   if weights is not None:
@@ -255,9 +257,9 @@ def main(argv):
 
   if jax.process_index() == 0:
     train_summary_writer = tensorboard.SummaryWriter(
-        os.path.join(FLAGS.model_dir, FLAGS.experiment + '_train'))
+        os.path.join(FLAGS.model_dir, f'{FLAGS.experiment}_train'))
     eval_summary_writer = tensorboard.SummaryWriter(
-        os.path.join(FLAGS.model_dir, FLAGS.experiment + '_eval'))
+        os.path.join(FLAGS.model_dir, f'{FLAGS.experiment}_eval'))
 
   # create the training and development dataset
   vocabs = input_pipeline.create_vocabs(FLAGS.train)
@@ -297,6 +299,7 @@ def main(argv):
     init_batch = jnp.ones((config.max_len, 1), jnp.float32)
     init_variables = model.init(init_rng, inputs=init_batch, train=False)
     return init_variables
+
   init_variables = initialize_variables(init_rng)
 
   learning_rate_fn = create_learning_rate_scheduler(

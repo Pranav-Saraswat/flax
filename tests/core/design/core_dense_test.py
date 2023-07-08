@@ -53,10 +53,7 @@ class ExplicitDense:
              bias_init=nn.initializers.zeros_init()):
     k1, k2 = random.split(rng, 2)
     kernel = kernel_init(k1, (in_size, out_size))
-    if bias:
-      bias = bias_init(k2, (out_size,))
-    else:
-      bias = None
+    bias = bias_init(k2, (out_size,)) if bias else None
     return ExplicitDense(kernel, bias)
 
   # a semi-explicit version where a scope is used to create explicit params
@@ -65,10 +62,7 @@ class ExplicitDense:
                       kernel_init=nn.linear.default_kernel_init,
                       bias_init=nn.initializers.zeros_init()):
     kernel = scope.param('kernel', kernel_init, (in_size, out_size))
-    if bias:
-      bias = scope.param('bias', bias_init, (out_size,))
-    else:
-      bias = None
+    bias = scope.param('bias', bias_init, (out_size,)) if bias else None
     return ExplicitDense(kernel, bias)
 
   def __call__(self, x):

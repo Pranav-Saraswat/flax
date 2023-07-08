@@ -81,10 +81,7 @@ def from_state_dict(target, state: Dict[str, Any], name: str = '.'):
   Returns:
     A copy of the object with the restored state.
   """
-  if _is_namedtuple(target):
-    ty = _NamedTuple
-  else:
-    ty = type(target)
+  ty = _NamedTuple if _is_namedtuple(target) else type(target)
   if ty not in _STATE_DICT_REGISTRY:
     return state
   ty_from_state_dict = _STATE_DICT_REGISTRY[ty][1]
@@ -94,10 +91,7 @@ def from_state_dict(target, state: Dict[str, Any], name: str = '.'):
 
 def to_state_dict(target) -> Dict[str, Any]:
   """Returns a dictionary with the state of the given target."""
-  if _is_namedtuple(target):
-    ty = _NamedTuple
-  else:
-    ty = type(target)
+  ty = _NamedTuple if _is_namedtuple(target) else type(target)
   if ty not in _STATE_DICT_REGISTRY:
     return target
 
@@ -145,7 +139,7 @@ def _restore_list(xs, state_dict: Dict[str, Any]) -> List[Any]:
 
 
 def _dict_state_dict(xs: Dict[str, Any]) -> Dict[str, Any]:
-  str_keys = set(str(k) for k in xs.keys())
+  str_keys = {str(k) for k in xs}
   if len(str_keys) != len(xs):
     raise ValueError(
         'Dict keys do not have a unique string representation: '
@@ -155,8 +149,7 @@ def _dict_state_dict(xs: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _restore_dict(xs, states: Dict[str, Any]) -> Dict[str, Any]:
-  diff = set(map(str, xs.keys())).difference(states.keys())
-  if diff:
+  if diff := set(map(str, xs.keys())).difference(states.keys()):
     raise ValueError('The target dict keys and state dict keys do not match,'
                    f' target dict contains keys {diff} which are not present in state dict '
                    f'at path {current_path()}')
@@ -240,10 +233,7 @@ def _ndarray_to_bytes(arr) -> bytes:
 
 def _dtype_from_name(name: str):
   """Handle JAX bfloat16 dtype correctly."""
-  if name == b'bfloat16':
-    return jax.numpy.bfloat16
-  else:
-    return np.dtype(name)
+  return jax.numpy.bfloat16 if name == b'bfloat16' else np.dtype(name)
 
 
 def _ndarray_from_bytes(data: bytes) -> np.ndarray:
@@ -357,11 +347,11 @@ def _unchunk_array_leaves_in_place(d):
   if isinstance(d, dict):
     if '__msgpack_chunked_array__' in d:
       return _unchunk(d)
-    else:
-      for k, v in d.items():
-        if isinstance(v, dict) and '__msgpack_chunked_array__' in v:
+    for k, v in d.items():
+      if isinstance(v, dict):
+        if '__msgpack_chunked_array__' in v:
           d[k] = _unchunk(v)
-        elif isinstance(v, dict):
+        else:
           _unchunk_array_leaves_in_place(v)
   return d
 

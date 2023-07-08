@@ -58,7 +58,7 @@ class TrainTest(absltest.TestCase):
 
     # Go two directories up to the root of the flax directory.
     flax_root_dir = pathlib.Path(__file__).parents[2]
-    data_dir = str(flax_root_dir) + '/.tfds/metadata'  # pylint: disable=unused-variable
+    data_dir = f'{str(flax_root_dir)}/.tfds/metadata'
 
     with tfds.testing.mock_data(num_examples=128, data_dir=data_dir):
       train.train_and_evaluate(config, workdir)

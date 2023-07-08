@@ -35,10 +35,7 @@ def get_raw_datasets() -> Dict[str, tf.data.Dataset]:
   ds_builder = tfds.builder('ogbg_molpcba')
   ds_builder.download_and_prepare()
   ds_splits = ['train', 'validation', 'test']
-  datasets = {
-      split: ds_builder.as_dataset(split=split) for split in ds_splits
-  }
-  return datasets
+  return {split: ds_builder.as_dataset(split=split) for split in ds_splits}
 
 
 def get_datasets(batch_size: int,

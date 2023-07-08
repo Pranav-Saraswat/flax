@@ -490,7 +490,7 @@ class SetAttributeInModuleSetupError(FlaxError):
   """
 
   def __init__(self):
-    super().__init__(f'Module construction attributes are frozen.')
+    super().__init__('Module construction attributes are frozen.')
 
 
 class SetAttributeFrozenModuleError(FlaxError):
@@ -545,7 +545,7 @@ class MultipleMethodsCompactError(FlaxError):
   """
 
   def __init__(self):
-    super().__init__(f'Only one method per class can be @compact')
+    super().__init__('Only one method per class can be @compact')
 
 
 class ReservedModuleAttributeError(FlaxError):

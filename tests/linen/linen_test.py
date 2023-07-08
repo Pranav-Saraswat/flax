@@ -284,10 +284,10 @@ class StochasticTest(absltest.TestCase):
 
   def test_dropout_rate_stats(self):
     rootkey = random.PRNGKey(0)
+    n_trials = 10
     for rate in np.arange(0.1, 1.0, 0.1):
       rootkey, subkey = random.split(rootkey)
       module = nn.Dropout(rate=rate)
-      n_trials = 10
       nonzero_counts = 0
       for key in random.split(subkey, n_trials):
         y = module.apply({},

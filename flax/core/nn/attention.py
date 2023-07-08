@@ -75,8 +75,7 @@ def dot_product_attention(scope,
     Output of shape `[bs, dim1, dim2, ..., dimN,, num_heads, value_channels]`.
   """
   assert key.shape[:-1] == value.shape[:-1]
-  assert (query.shape[0:1] == key.shape[0:1] and
-          query.shape[-1] == key.shape[-1])
+  assert query.shape[:1] == key.shape[:1] and query.shape[-1] == key.shape[-1]
 
   if axis is None:
     axis = tuple(range(1, key.ndim - 2))

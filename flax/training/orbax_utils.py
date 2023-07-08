@@ -28,9 +28,7 @@ PyTree = Any
 
 def is_multi_device_array(value: Any) -> bool:
   """Instruct Orbax to save this array with Tensorstore instead of msgpack."""
-  if isinstance(value, jax.Array):
-    return not value.is_fully_replicated
-  return False
+  return not value.is_fully_replicated if isinstance(value, jax.Array) else False
 
 
 def save_args_from_target(target: Any) -> Any:
@@ -53,9 +51,7 @@ def restore_args_from_target(target: Any, mesh: Optional[Mesh] = None) -> Any:
     A Pytree of Orbax `RestoreArgs` or `ArrayRestoreArgs`
   """
   def find_sharding(x):
-    if is_multi_device_array(x):
-      return x.sharding
-    return None
+    return x.sharding if is_multi_device_array(x) else None
 
   # Simpler case: no multihost arrays
   if not any(

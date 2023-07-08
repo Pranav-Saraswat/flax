@@ -32,10 +32,10 @@ class EarlyStoppingTests(absltest.TestCase):
     es = early_stopping.EarlyStopping(min_delta=0,
                                       patience=0)
 
-    for i in range(2):
+    metric = 1.
+    for _ in range(2):
       improve_steps = 0
       for step in range(10):
-        metric = 1.
         did_improve, es = es.update(metric)
         if not did_improve:
           improve_steps += 1
@@ -52,16 +52,16 @@ class EarlyStoppingTests(absltest.TestCase):
                                       patience=0)
     patient_es = early_stopping.EarlyStopping(min_delta=0,
                                               patience=6)
+    metric = 1.
     for step in range(10):
-      metric = 1.
       did_improve, es = es.update(metric)
       if es.should_stop:
         break
 
     self.assertEqual(step, 1)
 
+    metric = 1.
     for patient_step in range(10):
-      metric = 1.
       did_improve, patient_es = patient_es.update(metric)
       if patient_es.should_stop:
         break

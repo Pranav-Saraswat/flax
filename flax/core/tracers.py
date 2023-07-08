@@ -25,9 +25,7 @@ def current_trace():
 
 def trace_level(main):
   """Returns the level of the trace of -infinity if it is None."""
-  if main:
-    return main.level
-  return float('-inf')
+  return main.level if main else float('-inf')
 
 
 def check_trace_level(base_level):

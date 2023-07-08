@@ -100,8 +100,9 @@ def compute_weighted_cross_entropy(logits,
     Tuple of scalar loss and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError("Incorrect shapes. Got shape %s logits and %s targets" %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f"Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets"
+    )
   vocab_size = logits.shape[-1]
   confidence = 1.0 - label_smoothing
   low_confidence = (1.0 - confidence) / (vocab_size - 1)
@@ -134,8 +135,9 @@ def compute_weighted_accuracy(logits, targets, weights=None):
     Tuple of scalar loss and batch normalizing factor.
   """
   if logits.ndim != targets.ndim + 1:
-    raise ValueError("Incorrect shapes. Got shape %s logits and %s targets" %
-                     (str(logits.shape), str(targets.shape)))
+    raise ValueError(
+        f"Incorrect shapes. Got shape {str(logits.shape)} logits and {str(targets.shape)} targets"
+    )
   loss = jnp.equal(jnp.argmax(logits, axis=-1), targets)
   normalizing_factor = np.prod(logits.shape[:-1])
   if weights is not None:
@@ -356,10 +358,10 @@ def evaluate(*, p_eval_step, params, eval_ds: tf.data.Dataset,
   eval_metrics = common_utils.get_metrics(eval_metrics)
   eval_metrics_sums = jax.tree_util.tree_map(jnp.sum, eval_metrics)
   eval_denominator = eval_metrics_sums.pop("denominator")
-  eval_summary = jax.tree_util.tree_map(
+  return jax.tree_util.tree_map(
       lambda x: x / eval_denominator,  # pylint: disable=cell-var-from-loop
-      eval_metrics_sums)
-  return eval_summary
+      eval_metrics_sums,
+  )
 
 
 def translate_and_calculate_bleu(*, p_pred_step, p_init_cache, params,
@@ -397,10 +399,9 @@ def translate_and_calculate_bleu(*, p_pred_step, p_init_cache, params,
   bleu_matches = bleu.bleu_partial(references, predictions)
   all_bleu_matches = per_host_sum_pmap(bleu_matches)
   bleu_score = bleu.complete_bleu(*all_bleu_matches)
-  # Save translation samples for tensorboard.
-  exemplars = ""
-  for n in np.random.choice(np.arange(len(predictions)), 8):
-    exemplars += f"{sources[n]}\n\n{references[n]}\n\n{predictions[n]}\n\n"
+  exemplars = "".join(
+      f"{sources[n]}\n\n{references[n]}\n\n{predictions[n]}\n\n"
+      for n in np.random.choice(np.arange(len(predictions)), 8))
   return exemplars, bleu_score
 
 
@@ -593,7 +594,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str):
           denominator = metrics_sums.pop("denominator")
           summary = jax.tree_util.tree_map(lambda x: x / denominator, metrics_sums)  # pylint: disable=cell-var-from-loop
           summary["learning_rate"] = lr
-          summary = {"train_" + k: v for k, v in summary.items()}
+          summary = {f"train_{k}": v for k, v in summary.items()}
           writer.write_scalars(step, summary)
           train_metrics = []
 
@@ -603,8 +604,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict, workdir: str):
               params=state.params,
               eval_ds=eval_ds,
               num_eval_steps=config.num_eval_steps)
-          writer.write_scalars(
-              step, {"eval_" + k: v for k, v in eval_results.items()})
+          writer.write_scalars(step, {f"eval_{k}": v for k, v in eval_results.items()})
 
         with report_progress.timed("translate_and_bleu"):
           exemplars, bleu_score = translate_and_calculate_bleu(

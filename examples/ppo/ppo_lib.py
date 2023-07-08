@@ -254,8 +254,7 @@ def process_experience(
 def get_initial_params(key: np.ndarray, model: nn.Module):
   input_dims = (1, 84, 84, 4)  # (minibatch, height, width, stacked frames)
   init_shape = jnp.ones(input_dims, jnp.float32)
-  initial_params = model.init(key, init_shape)['params']
-  return initial_params
+  return model.init(key, init_shape)['params']
 
 
 def create_train_state(params, model: nn.Module,
@@ -267,11 +266,9 @@ def create_train_state(params, model: nn.Module,
   else:
     lr = config.learning_rate
   tx = optax.adam(lr)
-  state = train_state.TrainState.create(
-      apply_fn=model.apply,
-      params=params,
-      tx=tx)
-  return state
+  return train_state.TrainState.create(apply_fn=model.apply,
+                                       params=params,
+                                       tx=tx)
 
 
 def train(
@@ -289,7 +286,7 @@ def train(
     optimizer: the trained optimizer
   """
 
-  game = config.game + 'NoFrameskip-v4'
+  game = f'{config.game}NoFrameskip-v4'
   simulators = [agent.RemoteSimulator(game)
                 for _ in range(config.num_agents)]
   summary_writer = tensorboard.SummaryWriter(model_dir)

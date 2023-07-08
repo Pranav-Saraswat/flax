@@ -67,11 +67,10 @@ class AtariPreprocessing:
       ValueError: if frame_skip or screen_size are not strictly positive.
     """
     if frame_skip <= 0:
-      raise ValueError('Frame skip should be strictly positive, got {}'.
-                       format(frame_skip))
+      raise ValueError(f'Frame skip should be strictly positive, got {frame_skip}')
     if screen_size <= 0:
-      raise ValueError('Target screen size should be strictly positive, got {}'.
-                       format(screen_size))
+      raise ValueError(
+          f'Target screen size should be strictly positive, got {screen_size}')
 
     self.environment = environment
     self.terminal_on_life_loss = terminal_on_life_loss

@@ -93,10 +93,8 @@ def gather_beams(nested, beam_indices, batch_size, new_beam_size):
       jnp.arange(batch_size * new_beam_size) // new_beam_size,
       (batch_size, new_beam_size))
   def gather_fn(x):
-    if x.ndim == 0:  # ignore scalars (e.g. cache index)
-      return x
-    else:
-      return x[batch_indices, beam_indices]
+    return x if x.ndim == 0 else x[batch_indices, beam_indices]
+
   return jax.tree_util.tree_map(gather_fn, nested)
 
 

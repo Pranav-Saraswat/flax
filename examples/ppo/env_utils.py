@@ -69,8 +69,7 @@ def create_env(game: str, clip_rewards: bool):
   if clip_rewards:
     env = ClipRewardEnv(env) # bin rewards to {-1., 0., 1.}
   preproc = seed_rl_atari_preprocessing.AtariPreprocessing(env)
-  stack = FrameStack(preproc, num_frames=4)
-  return stack
+  return FrameStack(preproc, num_frames=4)
 
 def get_num_actions(game: str):
   """Get the number of possible actions of a given Atari game.

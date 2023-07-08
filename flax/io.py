@@ -91,10 +91,7 @@ def set_mode(override: BackendMode):
 
 def GFile(name, mode):  # pylint: disable=invalid-name
   if io_mode == BackendMode.DEFAULT:
-    if 'b' in mode:
-      return open(name, mode)  # pylint: disable=unspecified-encoding
-    else:
-      return open(name, mode, encoding='utf-8')
+    return open(name, mode) if 'b' in mode else open(name, mode, encoding='utf-8')
   elif io_mode == BackendMode.TF:
     return gfile.GFile(name, mode)
   else:

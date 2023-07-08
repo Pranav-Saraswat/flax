@@ -132,20 +132,6 @@ class TransformTest(absltest.TestCase):
 
   def test_remat_kwargs(self):
     raise unittest.SkipTest("test breaks with grad")
-    class ConditionalReLU(nn.Module):
-      @nn.compact
-      def __call__(self, input, apply_relu : bool = False):
-        return nn.relu(input) if apply_relu else input
-    key = random.PRNGKey(0)
-    x = jnp.ones((4, 4)) * -1
-    remat_model = nn.remat(ConditionalReLU)()
-    p = remat_model.init(key, x)
-    y = remat_model.apply(p, x, apply_relu=True)
-
-    self.assertTrue(np.all(y == jnp.zeros_like(x)))
-
-    # This next line crashes with a concretization error
-    _ = jax.grad(lambda x: remat_model.apply(p, x, apply_relu=True))(x)
 
   def test_remat_static_argnums(self):
     test = self
@@ -344,6 +330,7 @@ class TransformTest(absltest.TestCase):
     np.testing.assert_allclose(c[1], c2[1], atol=1e-7)
 
   def test_multiscope_lifting_simple(self):
+
     class Counter(nn.Module):
       @nn.compact
       def __call__(self):
@@ -360,6 +347,8 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module(x)
+
+
     class Test(nn.Module):
       @nn.compact
       def __call__(self, x):
@@ -367,8 +356,8 @@ class TransformTest(absltest.TestCase):
         # we share stateful outer module as arg to two different, transformed modules:
         inner = nn.jit(Inner)(outer_dense, name='inner1')
         inner2 = nn.jit(Inner)(outer_dense, name='inner2')
-        res = inner(x) + inner2(x)
-        return res
+        return inner(x) + inner2(x)
+
 
     x = jnp.ones((10, 10))
     rngs = random.PRNGKey(0)
@@ -380,6 +369,7 @@ class TransformTest(absltest.TestCase):
                      jnp.array([4], jnp.int32))
 
   def test_multiscope_lifting_simple_decorator(self):
+
     class Counter(nn.Module):
       @nn.jit
       @nn.compact
@@ -399,6 +389,8 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module(x)
+
+
     class Test(nn.Module):
       @nn.compact
       def __call__(self, x):
@@ -406,8 +398,8 @@ class TransformTest(absltest.TestCase):
         # we share stateful outer module as arg to two different, transformed modules:
         inner = Inner(outer_dense, name='inner1')
         inner2 = Inner(outer_dense, name='inner2')
-        res = inner(x) + inner2(x)
-        return res
+        return inner(x) + inner2(x)
+
 
     x = jnp.ones((1, 1))
     rngs = random.PRNGKey(0)
@@ -419,6 +411,7 @@ class TransformTest(absltest.TestCase):
                      jnp.array([4], jnp.int32))
 
   def test_multiscope_lifting_argtree(self):
+
     class Counter(nn.Module):
       @nn.compact
       def __call__(self):
@@ -435,6 +428,8 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module[0](x) + self.outer_module[1](x)
+
+
     class Test(nn.Module):
       @nn.compact
       def __call__(self, x):
@@ -443,8 +438,8 @@ class TransformTest(absltest.TestCase):
         # we share stateful outer module as arg to two different, transformed modules:
         inner1 = nn.jit(Inner)((outer_dense1, outer_dense2), name='inner1')
         inner2 = nn.jit(Inner)((outer_dense1, outer_dense2), name='inner2')
-        res = inner1(x) + inner2(x)
-        return res
+        return inner1(x) + inner2(x)
+
 
     x = jnp.ones((1, 1))
     rngs = random.PRNGKey(0)
@@ -460,6 +455,7 @@ class TransformTest(absltest.TestCase):
                      jnp.array([4], jnp.int32))
 
   def test_multiscope_lifting_argtree_decorator(self):
+
     class Counter(nn.Module):
       @nn.jit
       @nn.compact
@@ -479,6 +475,8 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module[0](x) + self.outer_module[1](x)
+
+
     class Test(nn.Module):
       @nn.compact
       def __call__(self, x):
@@ -487,8 +485,8 @@ class TransformTest(absltest.TestCase):
         # we share stateful outer module as arg to two different, transformed modules:
         inner1 = Inner((outer_dense1, outer_dense2), name='inner1')
         inner2 = Inner((outer_dense1, outer_dense2), name='inner2')
-        res = inner1(x) + inner2(x)
-        return res
+        return inner1(x) + inner2(x)
+
 
     x = jnp.ones((1, 1))
     rngs = random.PRNGKey(0)
@@ -505,6 +503,7 @@ class TransformTest(absltest.TestCase):
 
   def test_multiscope_lifting_simple_decorator_w_jit(self):
     # TODO: actually test jaxpr on a simpler module.
+
     class Counter(nn.Module):
       @nn.jit
       @nn.compact
@@ -524,6 +523,8 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module(x)
+
+
     class Test(nn.Module):
       @nn.jit
       @nn.compact
@@ -532,8 +533,8 @@ class TransformTest(absltest.TestCase):
         # we share stateful outer module as arg to two different, transformed modules:
         inner = Inner(outer_dense, name='inner1')
         inner2 = Inner(outer_dense, name='inner2')
-        res = inner(x) + inner2(x)
-        return res
+        return inner(x) + inner2(x)
+
 
     x = jnp.ones((1, 1))
     rngs = random.PRNGKey(0)
@@ -545,6 +546,7 @@ class TransformTest(absltest.TestCase):
                     jnp.array([4], jnp.int32))
 
   def test_vmapped_outer_module(self):
+
     class Outer(nn.Module):
       @nn.jit
       @nn.compact
@@ -560,14 +562,16 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return self.outer_module(x)
+
+
     class Test(nn.Module):
       @nn.compact
       def __call__(self, x):
         outer_dense = Outer(name='outer')
         inner = Inner(outer_dense, name='inner1')
         inner2 = Inner(outer_dense, name='inner2')
-        res = inner(x) + inner2(x)
-        return res
+        return inner(x) + inner2(x)
+
 
     x = jnp.ones((3, 1, 2))
     rngs = random.PRNGKey(0)
@@ -896,17 +900,21 @@ class TransformTest(absltest.TestCase):
     self.assertTrue(tree_equals(init_vars_shapes, ref_var_shapes))
 
   def test_variable_in_args_transform(self):
+
+
+
     class Test(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         baz = self.variable('test', 'baz', jnp.zeros, x.shape)
-        y = self.mutate_variable_in_method(x, baz)
-        return y
+        return self.mutate_variable_in_method(x, baz)
+
       @nn.jit
       def mutate_variable_in_method(self, x, baz):
         baz.value += x
         return baz.value
+
 
     k = random.PRNGKey(0)
     x = jnp.ones((1,))
@@ -918,6 +926,7 @@ class TransformTest(absltest.TestCase):
                                jnp.array([2.0,]), atol=1e-7)
 
   def test_module_instance_in_args_transform(self):
+
     class Inner(nn.Module):
       @nn.jit
       @nn.compact
@@ -926,16 +935,19 @@ class TransformTest(absltest.TestCase):
         baz.value += x
         return baz.value
 
+
+
     class Test(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         inner = Inner(name="inner")
-        y = self.call_instance_arg_in_method(x, inner)
-        return y
+        return self.call_instance_arg_in_method(x, inner)
+
       @nn.jit
       def call_instance_arg_in_method(self, x, inner):
         return inner(x)
+
 
     k = random.PRNGKey(0)
     x = jnp.ones((1,))
@@ -947,6 +959,7 @@ class TransformTest(absltest.TestCase):
                                 jnp.array([2.0,]), atol=1e-7)
 
   def test_module_instance_in_args_transform_nested(self):
+
     class Inner(nn.Module):
       @nn.jit
       @nn.compact
@@ -955,15 +968,18 @@ class TransformTest(absltest.TestCase):
         baz.value += x
         return baz.value
 
+
+
     class Outer(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, inner, x):
-        y = self.call_instance_arg_in_method(x, inner)
-        return y
+        return self.call_instance_arg_in_method(x, inner)
+
       @nn.jit
       def call_instance_arg_in_method(self, x, inner):
         return inner(x)
+
 
     class Test(nn.Module):
       @nn.jit
@@ -984,6 +1000,7 @@ class TransformTest(absltest.TestCase):
 
 
   def test_nested_variable_passing(self):
+
     class NestedVarUser(nn.Module):
       somevar: nn.Variable
       @nn.jit
@@ -997,13 +1014,15 @@ class TransformTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return NestedVarUser(self.somevar)(x)
+
+
     class VarPasser(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         baz = self.variable('test', 'baz', jnp.zeros, x.shape)
-        y = VarUser(baz)(x)
-        return y
+        return VarUser(baz)(x)
+
 
     k = random.PRNGKey(0)
     x = jnp.ones((1,))
@@ -1062,6 +1081,8 @@ class TransformTest(absltest.TestCase):
     def trans(variables):
       return jax.tree_util.tree_map(lambda x: x.T, variables)
 
+
+
     class TiedAutencoder(nn.Module):
 
       features: int
@@ -1072,10 +1093,7 @@ class TransformTest(absltest.TestCase):
         def f(self):
           return nn.Dense(self.features if decode else self.latents, use_bias=False)(x)
 
-        if decode:
-          map_fn = trans
-        else:
-          map_fn = lambda x: x
+        map_fn = trans if decode else (lambda x: x)
         return nn.map_variables(f, "params", map_fn, map_fn, mutable=True)(self)
 
       def encode(self, x):
@@ -1086,6 +1104,7 @@ class TransformTest(absltest.TestCase):
 
       def __call__(self, x):
         return self.decode(self.encode(x))
+
 
     x = jnp.ones((2, 4))
     ae = TiedAutencoder(4, 5)
@@ -1174,20 +1193,24 @@ class TransformTest(absltest.TestCase):
     np.testing.assert_allclose(y_t, jnp.ones_like(x))
 
   def test_complicated_alias_mutation(self):
+
     class A(nn.Module):
       b: nn.Module
       @nn.jit
       @nn.compact
       def __call__(self, x):
         return self.b(x)
+
+
     class B(nn.Module):
       c: nn.Module
       @nn.jit
       @nn.compact
       def __call__(self, x):
         y = C(name='outer_c')(x)
-        z = self.c(x)
-        return z
+        return self.c(x)
+
+
     class C(nn.Module):
       @nn.jit
       @nn.compact

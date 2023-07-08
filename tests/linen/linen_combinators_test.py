@@ -43,9 +43,7 @@ class MLP(nn.Module):
     x = nn.Dense(
         features=self.layer_sizes[-1], kernel_init=nn.initializers.ones_init())(
             x)
-    if self.activation_final is None:
-      return x
-    return self.activation_final(x)
+    return x if self.activation_final is None else self.activation_final(x)
 
 
 class AttentionTuple(nn.Module):

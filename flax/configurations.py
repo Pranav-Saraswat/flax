@@ -39,7 +39,7 @@ def define_bool_state(name, default, help):
   'FLAX_<UPPERCASE_NAME>'. JAX config ensures that the flag can be overwritten
   on runtime with `flax.config.update('flax_<config_name>', <value>)`.
   """
-  return jax_config.define_bool_state('flax_' + name, default, help)
+  return jax_config.define_bool_state(f'flax_{name}', default, help)
 
 
 def static_bool_env(varname: str, default: bool) -> bool:

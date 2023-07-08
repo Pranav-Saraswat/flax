@@ -99,9 +99,7 @@ def _mesh_assignment_free(new_assignment, existing_assignments):
   """Determines if a given mesh axis has already been assigned."""
   new = set(jax.tree_util.tree_leaves(new_assignment))
   existing = set(jax.tree_util.tree_leaves(existing_assignments))
-  if existing.intersection(new):
-    return False
-  return True
+  return not existing.intersection(new)
 
 
 def _logical_to_mesh_axes(
@@ -114,9 +112,8 @@ def _logical_to_mesh_axes(
   if rules is None:
     rules = _axis_rules.rules
   axis_name_counts = collections.Counter(array_dim_names)
-  dups = tuple(
-      k for k, v in axis_name_counts.items() if v > 1 and k is not None)
-  if dups:
+  if dups := tuple(k for k, v in axis_name_counts.items()
+                   if v > 1 and k is not None):
     raise ValueError(
         f'Unsupported: Dimensions {dups} occur more than once in array names.')
   if not isinstance(rules, (tuple, list)):
@@ -222,11 +219,10 @@ def _with_sharding_constraint(
   """Wrapper for pjit with_sharding_constraint, no-op on cpu or outside pjit."""
   if jax.devices()[0].platform == 'cpu' or (not _global_mesh_defined() and mesh is None):
     return x
-  else:
-    if mesh is not None and axis_resources is not None:
-      sharding = jax.sharding.NamedSharding(mesh, axis_resources)
-      return pjit.with_sharding_constraint(x, sharding)
-    return pjit.with_sharding_constraint(x, axis_resources)
+  if mesh is not None and axis_resources is not None:
+    sharding = jax.sharding.NamedSharding(mesh, axis_resources)
+    return pjit.with_sharding_constraint(x, sharding)
+  return pjit.with_sharding_constraint(x, axis_resources)
 
 
 def _with_sharding_constraint_one_fallback(
@@ -242,12 +238,11 @@ def _with_sharding_constraint_one_fallback(
 
   if fallback == RulesFallback.AXIS_IS_UNSHARDED:
     mesh_axes = [None if x is _unassigned_axis else x for x in mesh_axes]
-  else:
-    if any(x is _unassigned_axis for x in mesh_axes):
-      if fallback == RulesFallback.RAISE_ERROR:
-        raise ValueError(f'Axis names {axis_resources} did not match a rule')
-      else:
-        return x
+  elif any(x is _unassigned_axis for x in mesh_axes):
+    if fallback == RulesFallback.RAISE_ERROR:
+      raise ValueError(f'Axis names {axis_resources} did not match a rule')
+    else:
+      return x
   return _with_sharding_constraint(x, jax.sharding.PartitionSpec(*mesh_axes), mesh=mesh)
 
 

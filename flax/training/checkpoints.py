@@ -107,10 +107,11 @@ def _checkpoint_path(ckpt_dir: str,
 
 def _checkpoint_path_step(path: str) -> Optional[float]:
   """Returns the step number of a checkpoint path."""
-  for s in SIGNED_FLOAT_RE.split(path)[::-1]:
-    if SIGNED_FLOAT_RE.match(s):
-      return float(s)
-  return None
+  return next(
+      (float(s)
+       for s in SIGNED_FLOAT_RE.split(path)[::-1] if SIGNED_FLOAT_RE.match(s)),
+      None,
+  )
 
 def _allowempty_listdir(path: str):
   try:
@@ -328,12 +329,11 @@ def natural_sort(file_list: Iterable[str], signed: bool = True) -> List[str]:
   """
   float_re = SIGNED_FLOAT_RE if signed else UNSIGNED_FLOAT_RE
   def maybe_num(s):
-    if float_re.match(s):
-      return float(s)
-    else:
-      return s
+    return float(s) if float_re.match(s) else s
+
   def split_keys(s):
     return [maybe_num(c) for c in float_re.split(s)]
+
   return sorted(file_list, key=split_keys)
 
 
@@ -807,8 +807,7 @@ def _all_checkpoints(ckpt_dir: Union[str, os.PathLike],
       not c.match(f'*{MP_ARRAY_POSTFIX}') and
       not c.match(f'*{orbax.utils.TMP_DIR_SUFFIX}*')
   ]
-  checkpoint_files = natural_sort(checkpoint_files)
-  if checkpoint_files:
+  if checkpoint_files := natural_sort(checkpoint_files):
     return checkpoint_files
   else:
     return []
@@ -825,8 +824,7 @@ def latest_checkpoint(ckpt_dir: Union[str, os.PathLike],
   Returns:
     The latest checkpoint path or None if no checkpoints were found.
   """
-  checkpoint_files = _all_checkpoints(ckpt_dir, prefix)
-  if checkpoint_files:
+  if checkpoint_files := _all_checkpoints(ckpt_dir, prefix):
     return checkpoint_files[-1]
   else:
     return None
@@ -1065,8 +1063,7 @@ def convert_pre_linen(params: PyTree) -> PyTree:
   names = natural_sort(params.keys())
   for name in names:
     value = params[name]
-    match = MODULE_NUM_RE.match(name)
-    if match:
+    if match := MODULE_NUM_RE.match(name):
       module = match.group(1)
       num = counts.get(module, 0)
       name = f'{module}_{num}'

@@ -53,12 +53,14 @@ class TracebackTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return Test2()(x)
+
+
     class Test2(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         raise ValueError('error here.')
-        return x  # pylint: disable=unreachable
+
 
     traceback_util.hide_flax_in_tracebacks()
     jax.config.update('jax_traceback_filtering', 'tracebackhide')
@@ -83,17 +85,20 @@ class TracebackTest(absltest.TestCase):
 
 
   def test_simple_exclusion_remove_frames(self):
+
     class Test1(nn.Module):
       @nn.remat
       @nn.compact
       def __call__(self, x):
         return Test2()(x)
+
+
     class Test2(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         raise ValueError('error here.')
-        return x  # pylint: disable=unreachable
+
 
     traceback_util.hide_flax_in_tracebacks()
     jax.config.update('jax_traceback_filtering', 'remove_frames')
@@ -108,14 +113,8 @@ class TracebackTest(absltest.TestCase):
 
     self.assertIsInstance(e_cause, jax_traceback_util.UnfilteredStackTrace)
 
-    filtered_frames = 0
-    for _, _ in traceback.walk_tb(tb_filtered):
-      filtered_frames += 1
-
-    unfiltered_frames = 0
-    for _, _ in traceback.walk_tb(tb_unfiltered):
-      unfiltered_frames += 1
-
+    filtered_frames = sum(1 for _, _ in traceback.walk_tb(tb_filtered))
+    unfiltered_frames = sum(1 for _, _ in traceback.walk_tb(tb_unfiltered))
     self.assertEqual(filtered_frames, 3)
     self.assertGreater(unfiltered_frames, filtered_frames)
 
@@ -130,12 +129,14 @@ class TracebackTest(absltest.TestCase):
       @nn.compact
       def __call__(self, x):
         return Test2()(x)
+
+
     class Test2(nn.Module):
       @nn.jit
       @nn.compact
       def __call__(self, x):
         raise ValueError('error here.')
-        return x  # pylint: disable=unreachable
+
 
     key = random.PRNGKey(0)
 

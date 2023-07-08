@@ -50,10 +50,7 @@ NUM_CLASSES = 1000
 def create_model(*, model_cls, half_precision, **kwargs):
   platform = jax.local_devices()[0].platform
   if half_precision:
-    if platform == 'tpu':
-      model_dtype = jnp.bfloat16
-    else:
-      model_dtype = jnp.float16
+    model_dtype = jnp.bfloat16 if platform == 'tpu' else jnp.float16
   else:
     model_dtype = jnp.float32
   return model_cls(num_classes=NUM_CLASSES, dtype=model_dtype, **kwargs)
@@ -97,10 +94,10 @@ def create_learning_rate_fn(
   cosine_fn = optax.cosine_decay_schedule(
       init_value=base_learning_rate,
       decay_steps=cosine_epochs * steps_per_epoch)
-  schedule_fn = optax.join_schedules(
+  return optax.join_schedules(
       schedules=[warmup_fn, cosine_fn],
-      boundaries=[config.warmup_epochs * steps_per_epoch])
-  return schedule_fn
+      boundaries=[config.warmup_epochs * steps_per_epoch],
+  )
 
 
 def train_step(state, batch, learning_rate_fn):
@@ -235,13 +232,13 @@ def create_train_state(rng, config: ml_collections.ConfigDict,
       momentum=config.momentum,
       nesterov=True,
   )
-  state = TrainState.create(
+  return TrainState.create(
       apply_fn=model.apply,
       params=params,
       tx=tx,
       batch_stats=batch_stats,
-      dynamic_scale=dynamic_scale)
-  return state
+      dynamic_scale=dynamic_scale,
+  )
 
 
 def train_and_evaluate(config: ml_collections.ConfigDict,
@@ -270,10 +267,7 @@ def train_and_evaluate(config: ml_collections.ConfigDict,
   platform = jax.local_devices()[0].platform
 
   if config.half_precision:
-    if platform == 'tpu':
-      input_dtype = tf.bfloat16
-    else:
-      input_dtype = tf.float16
+    input_dtype = tf.bfloat16 if platform == 'tpu' else tf.float16
   else:
     input_dtype = tf.float32
 

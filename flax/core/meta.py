@@ -130,10 +130,8 @@ def is_axis_metadata(val: Any) -> bool:
 def map_axis_meta(fn: Callable[[AxisMetadata], Any], tree: Any) -> Any:
   """Maps over all PyTree nodes that are AxisMetadata instances."""
   def wrapper(x):
-    if isinstance(x, AxisMetadata):
-      return fn(x)
-    else:
-      return x
+    return fn(x) if isinstance(x, AxisMetadata) else x
+
   return jax.tree_map(wrapper, tree, is_leaf=is_axis_metadata)
 
 
@@ -234,15 +232,14 @@ class Partitioned(struct.PyTreeNode, AxisMetadata):
 
   def unbox(self, apply_constraint=True) -> Any:
     """Returns the wrapped value with the partitioning applied as a sharding constraint."""
-    if apply_constraint and (_global_mesh_defined() or self.mesh is not None):
-      axis_resource = self.get_partition_spec()
-      if self.mesh is not None:
-        sharding = jax.sharding.NamedSharding(self.mesh, axis_resource)
-        return jax.lax.with_sharding_constraint(self.value, sharding)
-      return jax.lax.with_sharding_constraint(
-          self.value, axis_resource)
-    else:
+    if not apply_constraint or not _global_mesh_defined() and self.mesh is None:
       return self.value
+    axis_resource = self.get_partition_spec()
+    if self.mesh is not None:
+      sharding = jax.sharding.NamedSharding(self.mesh, axis_resource)
+      return jax.lax.with_sharding_constraint(self.value, sharding)
+    return jax.lax.with_sharding_constraint(
+        self.value, axis_resource)
 
   def replace_boxed(self, val: Any) -> TAxisMetadata:
     return self.replace(value=val)

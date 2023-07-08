@@ -118,8 +118,8 @@ def pack_dataset(dataset: tf.data.Dataset,
     keys = list(shapes.keys())
   for k in keys:
     if k not in shapes:
-      raise ValueError('Key %s not found in dataset.  Available keys are %s' %
-                       (k, shapes.keys()))
+      raise ValueError(
+          f'Key {k} not found in dataset.  Available keys are {shapes.keys()}')
     if not shapes[k].is_compatible_with(tf.TensorShape([None])): # type: ignore[wrong-arg-types]
       raise ValueError('Tensors to be packed must be one-dimensional.')
   # make sure that the length dictionary contains all keys as well as the
@@ -165,7 +165,7 @@ def _pack_with_tf_ops(dataset: tf.data.Dataset, keys: List[str],
   empty_example = {}
   for k in keys:
     empty_example[k] = tf.zeros([0], dtype=tf.int32)
-    empty_example[k + '_position'] = tf.zeros([0], dtype=tf.int32)
+    empty_example[f'{k}_position'] = tf.zeros([0], dtype=tf.int32)
   keys_etc = empty_example.keys()
 
   def write_packed_example(partial, outputs):
@@ -195,8 +195,10 @@ def _pack_with_tf_ops(dataset: tf.data.Dataset, keys: List[str],
     for k in keys:
       outputs[k] = tf.TensorArray(
           tf.int32, size=0, dynamic_size=True, element_shape=[key2length[k]])
-      outputs[k + '_position'] = tf.TensorArray(
-          tf.int32, size=0, dynamic_size=True, element_shape=[key2length[k]])
+      outputs[f'{k}_position'] = tf.TensorArray(tf.int32,
+                                                size=0,
+                                                dynamic_size=True,
+                                                element_shape=[key2length[k]])
 
     def body_fn(i, partial, outputs):
       """Body function for while_loop.
@@ -233,8 +235,8 @@ def _pack_with_tf_ops(dataset: tf.data.Dataset, keys: List[str],
         new_seq = one_example[k][:key2length[k]]
         new_seq_len = tf.size(new_seq)
         new_partial[k] = tf.concat([partial[k], new_seq], 0)
-        new_partial[k + '_position'] = tf.concat(
-            [partial[k + '_position'],
+        new_partial[f'{k}_position'] = tf.concat(
+            [partial[f'{k}_position'],
              tf.range(new_seq_len)], 0)
       partial = new_partial
       return i + 1, partial, outputs
@@ -253,10 +255,9 @@ def _pack_with_tf_ops(dataset: tf.data.Dataset, keys: List[str],
     _, outputs = write_packed_example(partial, outputs)
     packed = {k: outputs[k].stack() for k in keys_etc}
     for k in keys:
-      packed[k + '_segmentation'] = (
-          tf.cumsum(
-              tf.cast(tf.equal(packed[k + '_position'], 0), tf.int32), axis=1) *
-          tf.cast(tf.not_equal(packed[k], 0), tf.int32))
+      packed[f'{k}_segmentation'] = tf.cumsum(
+          tf.cast(tf.equal(packed[f'{k}_position'], 0), tf.int32),
+          axis=1) * tf.cast(tf.not_equal(packed[k], 0), tf.int32)
     return packed
 
   dataset = dataset.map(map_fn, num_parallel_calls=AUTOTUNE)

@@ -39,9 +39,9 @@ def create_train_state(ctable):
       hidden_size=train.FLAGS.hidden_size, vocab_size=ctable.vocab_size)
   params = train.get_initial_params(model, jax.random.PRNGKey(0), ctable)
   tx = optax.adam(train.FLAGS.learning_rate)
-  state = train_state.TrainState.create(
-      apply_fn=model.apply, params=params, tx=tx)
-  return state
+  return train_state.TrainState.create(apply_fn=model.apply,
+                                       params=params,
+                                       tx=tx)
 
 
 class TrainTest(absltest.TestCase):

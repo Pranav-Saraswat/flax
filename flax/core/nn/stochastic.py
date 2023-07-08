@@ -40,8 +40,7 @@ def dropout(scope, inputs, rate, deterministic=False, rng=None):
 
   if deterministic:
     return inputs
-  else:
-    if rng is None:
-      rng = scope.make_rng('dropout')
-    mask = random.bernoulli(rng, p=keep_prob, shape=inputs.shape)
-    return lax.select(mask, inputs / keep_prob, jnp.zeros_like(inputs))
+  if rng is None:
+    rng = scope.make_rng('dropout')
+  mask = random.bernoulli(rng, p=keep_prob, shape=inputs.shape)
+  return lax.select(mask, inputs / keep_prob, jnp.zeros_like(inputs))

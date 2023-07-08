@@ -120,8 +120,5 @@ class Seq2seq(nn.Module):
     """Get segmentation mask for inputs."""
     # undo one-hot encoding
     inputs = jnp.argmax(inputs, axis=-1)
-    # calculate sequence lengths
-    seq_lengths = jnp.argmax(inputs == self.eos_id, axis=-1)
-
-    return seq_lengths
+    return jnp.argmax(inputs == self.eos_id, axis=-1)
 

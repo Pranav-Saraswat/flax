@@ -124,8 +124,7 @@ def create_token(token, attributes, vocabs):
     elif attribute == CoNLLAttributes.HEAD:
       selected_attributes.append(int(token[index]))
     else:
-      raise ValueError('CoNLL index %s not covered by mapping.' %
-                       str(attribute.name))
+      raise ValueError(f'CoNLL index {str(attribute.name)} not covered by mapping.')
   return selected_attributes
 
 

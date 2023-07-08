@@ -60,10 +60,7 @@ def _dot_product_attention(
   contract_dims = (
       tuple(range(n - 1, attn_weights.ndim)),
       tuple(range(0, n  - 1)))
-  y = lax.dot_general(
-      attn_weights, value,
-      (contract_dims, ((), ())))
-  return y
+  return lax.dot_general(attn_weights, value, (contract_dims, ((), ())))
 
 
 def dot_product_attention(

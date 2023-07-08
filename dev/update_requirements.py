@@ -101,15 +101,15 @@ def main(argv):
       continue
 
     pkgs = set()
-    local_pkgs_and_modules = set()
-    for path in example_dir.glob('*'):
-      if path.is_dir() and any(path.glob('*.py')):
-        local_pkgs_and_modules.add(path.parts[-1])  # local package
+    local_pkgs_and_modules = {
+        path.parts[-1]
+        for path in example_dir.glob('*')
+        if path.is_dir() and any(path.glob('*.py'))
+    }
     for py in example_dir.glob('*.py'):
       local_pkgs_and_modules.add(py.parts[-1][:-3])  # local module
       for line in open(py):
-        m = import_re.match(line)
-        if m:
+        if m := import_re.match(line):
           pkgs.add(m.group(1))
 
     pkgs -= local_pkgs_and_modules | standard_libs

@@ -101,9 +101,7 @@ def flatten_dict(xs, keep_empty_nodes=False, is_leaf=None, sep=None):
       (flax.core.FrozenDict, dict)), f'expected (frozen)dict; got {type(xs)}'
 
   def _key(path):
-    if sep is None:
-      return path
-    return sep.join(path)
+    return path if sep is None else sep.join(path)
 
   def _flatten(xs, prefix):
     if not isinstance(xs, (flax.core.FrozenDict, dict)) or (
@@ -116,10 +114,9 @@ def flatten_dict(xs, keep_empty_nodes=False, is_leaf=None, sep=None):
       path = prefix + (key,)
       result.update(_flatten(value, path))
     if keep_empty_nodes and is_empty:
-      if prefix == ():  # when the whole input is empty
-        return {}
-      return {_key(prefix): empty_node}
+      return {} if prefix == () else {_key(prefix): empty_node}
     return result
+
   return _flatten(xs, ())
 
 
@@ -328,10 +325,7 @@ class TraverseFilter(Traversal):
     self._fn = fn
 
   def update(self, fn, inputs):
-    if self._fn(inputs):
-      return fn(inputs)
-    else:
-      return inputs
+    return fn(inputs) if self._fn(inputs) else inputs
 
   def iterate(self, inputs):
     if self._fn(inputs):
@@ -380,10 +374,7 @@ class TraverseItem(Traversal):
 
       args = [fn(inputs[i]) if i in indices else inputs[i]
               for i in range(len(inputs))]
-      if _is_namedtuple(ty):
-        return ty(*args)
-      else:
-        return ty(args)
+      return ty(*args) if _is_namedtuple(ty) else ty(args)
     else:
       xs = copy.copy(inputs)
       xs[self._key] = fn(xs[self._key])

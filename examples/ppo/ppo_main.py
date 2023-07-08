@@ -43,7 +43,7 @@ def main(argv):
   # Make sure tf does not allocate gpu memory.
   tf.config.experimental.set_visible_devices([], 'GPU')
   config = FLAGS.config
-  game = config.game + 'NoFrameskip-v4'
+  game = f'{config.game}NoFrameskip-v4'
   num_actions = env_utils.get_num_actions(game)
   print(f'Playing {game} with {num_actions} actions')
   model = models.ActorCritic(num_outputs=num_actions)

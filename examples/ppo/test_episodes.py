@@ -45,7 +45,7 @@ def policy_test(
     obs = test_env.reset()
     state = obs[None, ...]  # add batch dimension
     total_reward = 0.0
-    for t in itertools.count():
+    for _ in itertools.count():
       log_probs, _ = agent.policy_action(apply_fn, params, state)
       probs = np.exp(np.array(log_probs, dtype=np.float32))
       probabilities = probs[0] / probs[0].sum()

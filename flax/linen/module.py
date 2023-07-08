@@ -77,14 +77,11 @@ def _indent(x: str, num_spaces: int):
 
 
 def _attr_repr(value: Any):
-  if callable(value) and (
+  return (value.__name__ if callable(value) and (
       (isinstance(value, nn.Module) and value.__dict__.get('__name__', None))
-      or (not isinstance(value, nn.Module) and getattr(value, '__name__', None))
-  ):
-    value_rep = value.__name__
-  else:
-    value_rep = repr(value)
-  return value_rep
+      or
+      (not isinstance(value, nn.Module) and getattr(value, '__name__', None)))
+          else repr(value))
 
 
 def _module_repr(module: 'Module', num_spaces: int = 4):
@@ -102,7 +99,7 @@ def _module_repr(module: 'Module', num_spaces: int = 4):
                    if isinstance(v, Module)}
   if attributes:
     rep += '# attributes\n'
-    for attr in attributes.keys():
+    for attr in attributes:
       # TODO(jheek): can we get a nice string representation of attribute types?
       value = module.__dict__.get(attr, None)
       value_rep = _attr_repr(value)
@@ -112,10 +109,7 @@ def _module_repr(module: 'Module', num_spaces: int = 4):
     for name, child in child_modules.items():
       child_rep = _module_repr(child, num_spaces)
       rep += f'{name} = {child_rep}\n'
-  if rep:
-    return f'{cls_name}(\n{_indent(rep, num_spaces)})'
-  else:
-    return f'{cls_name}()'
+  return f'{cls_name}(\n{_indent(rep, num_spaces)})' if rep else f'{cls_name}()'
 
 # Tabulation utilities.
 # -----------------------------------------------------------------------------
@@ -125,8 +119,7 @@ _find_non_lifted_module = re.compile(r'.*\((.*)\)')
 def _fix_path_part(part: str):
   """Fixes a path part by removing transformation name and parenthesis sometimes
   inserted by lifted transformations"""
-  match = _find_non_lifted_module.match(part)
-  if match:
+  if match := _find_non_lifted_module.match(part):
     return match.group(1)
   return part
 
@@ -261,9 +254,8 @@ def _get_suffix_value_pairs(
   dict_or_leaf = serialization.to_state_dict(tree_or_leaf)
   if not isinstance(dict_or_leaf, dict) or not dict_or_leaf:
     return [('', tree_or_leaf)]
-  else:
-    flat_dict = traverse_util.flatten_dict(dict_or_leaf)
-    return [('_' + '_'.join(k), v) for k, v in _sorted_items(flat_dict)]
+  flat_dict = traverse_util.flatten_dict(dict_or_leaf)
+  return [('_' + '_'.join(k), v) for k, v in _sorted_items(flat_dict)]
 
 
 def _map_over_modules_in_tree(fn, tree_or_leaf):
@@ -271,12 +263,11 @@ def _map_over_modules_in_tree(fn, tree_or_leaf):
   dict_or_leaf = serialization.to_state_dict(tree_or_leaf)
   if not isinstance(dict_or_leaf, dict) or not dict_or_leaf:
     return fn('', tree_or_leaf)
-  else:
-    flat_dict = traverse_util.flatten_dict(dict_or_leaf, keep_empty_nodes=True)
-    mapped_flat_dict = {k: fn('_' + '_'.join(k), v)
-                        for k, v in _sorted_items(flat_dict)}
-    return serialization.from_state_dict(
-        tree_or_leaf, traverse_util.unflatten_dict(mapped_flat_dict))
+  flat_dict = traverse_util.flatten_dict(dict_or_leaf, keep_empty_nodes=True)
+  mapped_flat_dict = {k: fn('_' + '_'.join(k), v)
+                      for k, v in _sorted_items(flat_dict)}
+  return serialization.from_state_dict(
+      tree_or_leaf, traverse_util.unflatten_dict(mapped_flat_dict))
 
 
 def _freeze_attr(val: Any) -> Any:
@@ -368,7 +359,7 @@ def _get_local_method_names(cls: Any,
   for m in cls.__dict__:
     if callable(cls.__dict__[m]) and not inspect.isclass(cls.__dict__[m]):  # pytype: disable=not-supported-yet
       mtype = type(cls.__dict__[m])
-      if mtype != staticmethod and mtype != classmethod:
+      if mtype not in [staticmethod, classmethod]:
         true_methods.add(m)
   return tuple(true_methods.difference(set(exclude)))
 
@@ -389,7 +380,7 @@ def _get_local_descriptor_names(cls: Any,
       hasattr(attr, '__delete__')
     ):
       mtype = type(attr)
-      if mtype != staticmethod and mtype != classmethod:
+      if mtype not in [staticmethod, classmethod]:
         true_properties.add(m)
   return tuple(true_properties.difference(set(exclude)))
 
@@ -514,18 +505,18 @@ class _ModuleInternalState:
     """
     self.in_compact_method = False
     self.in_setup = False
-    self.autoname_cursor = dict()
+    self.autoname_cursor = {}
 
   def export(self) -> '_ModuleInternalState':
     """Exports transform-preserved state across transform boundary."""
     setup_state = SetupState.TRANSFORMED if self.setup_called else SetupState.NEW
-    cloned = _ModuleInternalState(
+    return _ModuleInternalState(
         in_compact_method=self.in_compact_method,
         in_setup=self.in_setup,
         setup_called=setup_state,
         is_initialized=self.is_initialized,
-        autoname_cursor=dict(self.autoname_cursor))
-    return cloned
+        autoname_cursor=dict(self.autoname_cursor),
+    )
 
   def reimport(self, other: '_ModuleInternalState') -> None:
     """Re-imports transform-preserved state from across transform boundary."""
@@ -749,17 +740,16 @@ class Module(ModuleBase):
                      kw_only_dataclasses.field(default=None, kw_only=True))]
 
     if kw_only:
-      if tuple(sys.version_info)[:3] >= (3, 10, 0):
-        for name, annotation, default in extra_fields:  # pytype: disable=invalid-annotation
-          setattr(cls, name, default)
-          cls.__annotations__[name] = annotation
-        dataclasses.dataclass(
-            unsafe_hash='__hash__' not in cls.__dict__,
-            repr=False,
-            kw_only=True,
-        )(cls)  # type: ignore[call-overload]
-      else:
+      if tuple(sys.version_info)[:3] < (3, 10, 0):
         raise TypeError('`kw_only` is not available before Py 3.10.')
+      for name, annotation, default in extra_fields:  # pytype: disable=invalid-annotation
+        setattr(cls, name, default)
+        cls.__annotations__[name] = annotation
+      dataclasses.dataclass(
+          unsafe_hash='__hash__' not in cls.__dict__,
+          repr=False,
+          kw_only=True,
+      )(cls)  # type: ignore[call-overload]
     else:
       # Now apply dataclass transform (which operates in-place).
       # Do generate a hash function only if not provided by the class.
@@ -894,16 +884,15 @@ class Module(ModuleBase):
     is_dataclass_attr = name in fields and fields[name].init
 
     if not self._state.in_setup:
-      if not self._state.is_initialized:
-        # Setting attributes before end of Module.__post_init__()
-        object.__setattr__(self, name, val)
-        return
-      else:
+      if self._state.is_initialized:
         # We're past all initialization and setup logic:
         # Raises a TypeError just like frozen python dataclasses.
         raise errors.SetAttributeFrozenModuleError(
             self.__class__.__name__, name, val)
 
+      # Setting attributes before end of Module.__post_init__()
+      object.__setattr__(self, name, val)
+      return
     # We're inside the setup() method:
     if is_dataclass_attr:
       # These names are specified as dataclass fields. They should not be
@@ -923,12 +912,11 @@ class Module(ModuleBase):
     self._try_setup()
     if name in self.__dict__:
       return self.__dict__[name]
-    else:
-      msg = f'"{self.__class__.__name__}" object has no attribute "{name}".'
-      if self.scope is None:
-        msg += (f' If "{name}" is defined in \'.setup()\', remember these fields '
-          'are only accessible from inside \'init\' or \'apply\'.')
-      raise AttributeError(msg)
+    msg = f'"{self.__class__.__name__}" object has no attribute "{name}".'
+    if self.scope is None:
+      msg += (f' If "{name}" is defined in \'.setup()\', remember these fields '
+        'are only accessible from inside \'init\' or \'apply\'.')
+    raise AttributeError(msg)
 
   def __dir__(self) -> List[str]:
     """Call setup() before listing attributes."""
@@ -1079,27 +1067,27 @@ class Module(ModuleBase):
 
   def _try_setup(self, shallow: bool = False) -> None:
     """Tries to setup module if scope is available and setup has not been called yet."""
-    if (self.scope
-        and not self._state.in_setup
-        and self._state.setup_called != SetupState.DONE):
-      try:
-        self._state.in_setup = True
-        # A shallow setup will only register attribute submodules but it does
-        # not call the user's setup. This avoids running before a
-        # transformation.
-        for field in dataclasses.fields(self):
-          if field.name not in ('parent', 'name') and field.init:
-            self._register_submodules(field.name, getattr(self, field.name))
-        if not shallow:
-          self.setup()
-        # We run static checks abstractly once for setup before any transforms
-        # to detect name collisions and other python errors.
-        elif self._state.setup_called == SetupState.NEW:
-          self._validate_setup()
-      finally:
-        self._state.in_setup = False
-        if not shallow:
-          self._state.setup_called = SetupState.DONE
+    if (not self.scope or self._state.in_setup
+        or self._state.setup_called == SetupState.DONE):
+      return
+    try:
+      self._state.in_setup = True
+      # A shallow setup will only register attribute submodules but it does
+      # not call the user's setup. This avoids running before a
+      # transformation.
+      for field in dataclasses.fields(self):
+        if field.name not in ('parent', 'name') and field.init:
+          self._register_submodules(field.name, getattr(self, field.name))
+      if not shallow:
+        self.setup()
+      # We run static checks abstractly once for setup before any transforms
+      # to detect name collisions and other python errors.
+      elif self._state.setup_called == SetupState.NEW:
+        self._validate_setup()
+    finally:
+      self._state.in_setup = False
+      if not shallow:
+        self._state.setup_called = SetupState.DONE
 
   def _validate_setup(self) -> None:
     """Abstractly evaluates setup only to run static checks."""
@@ -1115,9 +1103,7 @@ class Module(ModuleBase):
                   reuse_scopes: bool = False,
                   collection: Optional[str] = None) -> bool:
     assert self.scope is not None
-    if reuse_scopes:
-      return False
-    return self.scope.name_reserved(name, collection)
+    return False if reuse_scopes else self.scope.name_reserved(name, collection)
 
   @property
   def _initialization_allowed(self):
@@ -1159,10 +1145,9 @@ class Module(ModuleBase):
           key = m._id
           if key in cache:
             return cache[key]
-          else:
-            clone = m.clone(_deep_clone=cache)
-            cache[key] = clone
-            return clone
+          clone = m.clone(_deep_clone=cache)
+          cache[key] = clone
+          return clone
         else:
           # If the module doesn't have an _id attribute it could be a mock object
           # so we return it as is.

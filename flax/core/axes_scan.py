@@ -96,13 +96,11 @@ def scan(
     if ax == 0:
       return xs
     def trans(x):
-      if ax < 0:
-        pax = x.ndim - ax
-      else:
-        pax = ax
+      pax = x.ndim - ax if ax < 0 else ax
       assert pax < x.ndim
       perm = tuple(range(1, pax + 1)) + (0,) + tuple(range(pax + 1, x.ndim))
       return jnp.transpose(x, perm)
+
     return jax.tree_util.tree_map(trans, xs)
 
   def scan_fn(broadcast_in, init, *args):

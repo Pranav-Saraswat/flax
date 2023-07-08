@@ -117,10 +117,7 @@ class DynamicScale(struct.PyTreeNode):
     @functools.wraps(fun)
     def loss_wrapper(*args):
       aux = fun(*args)
-      if has_aux:
-        return (self.scale * aux[0], aux[1])
-      else:
-        return self.scale * aux
+      return (self.scale * aux[0], aux[1]) if has_aux else self.scale * aux
 
     grad_fn = jax.value_and_grad(loss_wrapper, argnums, has_aux)
     def grad_fn_wrapper(*args):
@@ -149,4 +146,5 @@ class DynamicScale(struct.PyTreeNode):
 
       new_self = self.replace(fin_steps=new_fin_steps, scale=new_scale)
       return DynamicScaleResult(new_self, finite, aux, grad)
+
     return grad_fn_wrapper

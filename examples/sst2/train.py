@@ -66,8 +66,7 @@ def create_train_state(rng, config: ml_collections.ConfigDict, model):
   tx = optax.chain(
       optax.sgd(learning_rate=config.learning_rate, momentum=config.momentum),
       optax.add_decayed_weights(weight_decay=config.weight_decay))
-  state = TrainState.create(apply_fn=model.apply, params=params, tx=tx)
-  return state
+  return TrainState.create(apply_fn=model.apply, params=params, tx=tx)
 
 
 def compute_metrics(*, labels: Array, logits: Array) -> Metrics:
@@ -85,15 +84,15 @@ def compute_metrics(*, labels: Array, logits: Array) -> Metrics:
 
 def model_from_config(config: ml_collections.ConfigDict):
   """Builds a text classification model from a config."""
-  model = models.TextClassifier(
+  return models.TextClassifier(
       embedding_size=config.embedding_size,
       hidden_size=config.hidden_size,
       vocab_size=config.vocab_size,
       output_size=config.output_size,
       dropout_rate=config.dropout_rate,
       word_dropout_rate=config.word_dropout_rate,
-      unk_idx=config.unk_idx)
-  return model
+      unk_idx=config.unk_idx,
+  )
 
 
 def train_step(
@@ -137,8 +136,7 @@ def eval_step(state: TrainState, batch: Dict[str, Array],
       variables, batch['token_ids'], batch['length'],
       deterministic=True,
       rngs=rngs)
-  metrics = compute_metrics(labels=batch['label'], logits=logits)
-  return metrics
+  return compute_metrics(labels=batch['label'], logits=logits)
 
 
 def normalize_batch_metrics(

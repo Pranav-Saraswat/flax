@@ -197,9 +197,7 @@ class SimpleBiLSTM(nn.Module):
     _, backward_outputs = self.backward_lstm(initial_state, reversed_inputs)
     backward_outputs = flip_sequences(backward_outputs, lengths)
 
-    # Concatenate the forward and backward representations.
-    outputs = jnp.concatenate([forward_outputs, backward_outputs], -1)
-    return outputs
+    return jnp.concatenate([forward_outputs, backward_outputs], -1)
 
 
 class MLP(nn.Module):
@@ -240,8 +238,7 @@ class MLP(nn.Module):
     hidden = self.intermediate_layer(inputs)
     hidden = self.activation(hidden)
     hidden = self.dropout_layer(hidden, deterministic=deterministic)
-    output = self.output_layer(hidden)
-    return output
+    return self.output_layer(hidden)
 
 
 class KeysOnlyMlpAttention(nn.Module):
@@ -342,9 +339,7 @@ class AttentionClassifier(nn.Module):
     context = context.squeeze(1)  # <float32>[batch_size, encoded_inputs_size]
     context = self.dropout_layer(context, deterministic=deterministic)
 
-    # Make the final prediction from the context vector (the summarized inputs).
-    logits = self.mlp(context, deterministic=deterministic)
-    return logits
+    return self.mlp(context, deterministic=deterministic)
 
 
 class TextClassifier(nn.Module):
@@ -393,6 +388,6 @@ class TextClassifier(nn.Module):
     """Embeds the token IDs, encodes them, and classifies with attention."""
     embedded_inputs = self.embed_token_ids(
         token_ids, deterministic=deterministic)
-    logits = self.logits_from_embedded_inputs(
-        embedded_inputs, lengths, deterministic=deterministic)
-    return logits
+    return self.logits_from_embedded_inputs(embedded_inputs,
+                                            lengths,
+                                            deterministic=deterministic)

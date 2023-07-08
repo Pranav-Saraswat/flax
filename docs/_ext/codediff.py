@@ -48,7 +48,7 @@ class CodeDiffParser:
       raise ValueError('Code separator not found! Code snippets should be '
                        f'separated by {code_sep}.')
     idx = lines.index(code_sep)
-    code_left = self._code_block(lines[0: idx])
+    code_left = self._code_block(lines[:idx])
     test_code = lines[idx+1:]
     code_right = self._code_block(test_code)
 
@@ -64,14 +64,12 @@ class CodeDiffParser:
     highlight = lambda x: x.endswith('#!')
     code = map(lambda x: x[:-2].rstrip() if highlight(x) else x, lines)
     highlights = [i + 1 for i in range(len(lines)) if highlight(lines[i])]
-    highlights = ','.join(str(i) for i in highlights)
-
     directive = ['.. code-block:: python']
-    if highlights:
+    if highlights := ','.join(str(i) for i in highlights):
       directive += [f'  :emphasize-lines: {highlights}']
 
     # Indent code and add empty line so the code is picked up by the directive.
-    return directive + [''] + list(map(lambda x: '  ' + x, code))
+    return directive + [''] + list(map(lambda x: f'  {x}', code))
 
   def _tabs(self, *contents: Tuple[str, List[str]], sync):
     output = ['.. tab-set::'] + ['  ']
@@ -84,7 +82,7 @@ class CodeDiffParser:
         output += [f'    :sync: {key}']
 
       output += ['    ']
-      output += ['    ' + line for line in content]
+      output += [f'    {line}' for line in content]
 
     return output
 

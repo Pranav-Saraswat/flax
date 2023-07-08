@@ -171,8 +171,7 @@ def get_predicted_logits(state: train_state.TrainState,
                          rngs: Optional[Dict[str, jnp.ndarray]]) -> jnp.ndarray:
   """Get predicted logits from the network for input graphs."""
   pred_graphs = state.apply_fn(state.params, graphs, rngs=rngs)
-  logits = pred_graphs.globals
-  return logits
+  return pred_graphs.globals
 
 
 def get_valid_mask(labels: jnp.ndarray,

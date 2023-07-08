@@ -35,7 +35,7 @@ def _canonicalize_axes(rank: int, axes: Axes) -> Tuple[int, ...]:
   """Returns a tuple of deduplicated, sorted, and positive axes."""
   if not isinstance(axes, Iterable):
     axes = (axes,)
-  return tuple(set([rank + axis if axis < 0 else axis for axis in axes]))
+  return tuple({rank + axis if axis < 0 else axis for axis in axes})
 
 
 def _abs_sq(x):
@@ -84,11 +84,7 @@ def _compute_stats(x: Array, axes: Optional[Axes],
   x = jnp.asarray(x, dtype)
 
   mean2 = jnp.mean(_abs_sq(x), axes)
-  if use_mean:
-    mean = jnp.mean(x, axes)
-  else:
-    mean = jnp.zeros(mean2.shape, dtype=dtype)
-
+  mean = jnp.mean(x, axes) if use_mean else jnp.zeros(mean2.shape, dtype=dtype)
   if axis_name is not None:
     pmean = functools.partial(
         lax.pmean, axis_name=axis_name, axis_index_groups=axis_index_groups
@@ -480,18 +476,20 @@ class GroupNorm(Module):
                        'the default `num_groups` value of 32.')
 
     channels = x.shape[-1]
-    if self.group_size is not None:
-      if channels % self.group_size != 0:
-        raise ValueError('Number of channels ({}) is not multiple of the '
-                         'group size ({}).'.format(channels, self.group_size))
-      num_groups = channels // self.group_size
-    else:
+    if self.group_size is None:
       num_groups = self.num_groups
       assert isinstance(num_groups, int)
 
+    elif channels % self.group_size != 0:
+      raise ValueError(
+          f'Number of channels ({channels}) is not multiple of the group size ({self.group_size}).'
+      )
+    else:
+      num_groups = channels // self.group_size
     if num_groups <= 0 or channels % num_groups != 0:
-      raise ValueError('Number of groups ({}) does not divide the number'
-                       ' of channels ({}).'.format(num_groups, channels))
+      raise ValueError(
+          f'Number of groups ({num_groups}) does not divide the number of channels ({channels}).'
+      )
 
     group_size = x.shape[-1] // num_groups
     group_shape = x.shape[:-1] + (num_groups, group_size)

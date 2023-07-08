@@ -90,9 +90,9 @@ def get_train_state(rng: PRNGKey, ctable: CTable) -> train_state.TrainState:
   model = get_model(ctable)
   params = get_initial_params(model, rng, ctable)
   tx = optax.adam(FLAGS.learning_rate)
-  state = train_state.TrainState.create(
-      apply_fn=model.apply, params=params, tx=tx)
-  return state
+  return train_state.TrainState.create(apply_fn=model.apply,
+                                       params=params,
+                                       tx=tx)
 
 
 def cross_entropy_loss(logits: Array, labels: Array, lengths: Array) -> float:
@@ -114,11 +114,10 @@ def compute_metrics(logits: Array, labels: Array,
       jnp.sum(mask_sequences(token_accuracy, lengths), axis=-1) == lengths
   )
   accuracy = jnp.mean(sequence_accuracy)
-  metrics = {
+  return {
       'loss': loss,
       'accuracy': accuracy,
   }
-  return metrics
 
 
 @jax.jit
@@ -156,7 +155,7 @@ def log_decode(question: str, inferred: str, golden: str):
 def decode(params: Dict[str, Any], inputs: Array, decode_rng: PRNGKey,
            ctable: CTable) -> Array:
   """Decodes inputs."""
-  init_decoder_input = ctable.one_hot(ctable.encode('=')[0:1])
+  init_decoder_input = ctable.one_hot(ctable.encode('=')[:1])
   init_decoder_inputs = jnp.tile(init_decoder_input,
                                  (inputs.shape[0], ctable.max_output_len, 1))
   model = get_model(ctable, teacher_force=False)

@@ -37,10 +37,7 @@ def _disk_usage(path: pathlib.Path):
   if path.is_file():
     return path.stat().st_size
   elif path.is_dir():
-    size_bytes = 0
-    for file in path.iterdir():
-      size_bytes += _disk_usage(file)
-    return size_bytes
+    return sum(_disk_usage(file) for file in path.iterdir())
   else:
     raise NotImplementedError("What filetype is {file}?")
 
@@ -50,14 +47,11 @@ class TensorboardTest(absltest.TestCase):
   def parse_and_return_summary_value(self, path):
     """Parse the event file in the given path and return the
     only summary value."""
-    event_value_list = []
     event_file_generator = directory_watcher.DirectoryWatcher(
         path, event_file_loader.EventFileLoader).Load()
     event_values = itertools.chain.from_iterable(
         map(_process_event, event_file_generator))
-    for value_dict in event_values:
-      event_value_list.append(value_dict)
-
+    event_value_list = list(event_values)
     self.assertLen(event_value_list, 1)
     self.assertEqual(event_value_list[0]['step'], 1)
     self.assertGreater(event_value_list[0]['wall_time'], 0.0)

@@ -41,8 +41,7 @@ def policy_action(
   Returns:
     out: a tuple (log_probabilities, values)
   """
-  out = apply_fn({'params': params}, state)
-  return out
+  return apply_fn({'params': params}, state)
 
 
 ExpTuple = collections.namedtuple(

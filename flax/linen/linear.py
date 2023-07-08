@@ -50,10 +50,7 @@ def _normalize_axes(axes: Tuple[int, ...], ndim: int) -> Tuple[int, ...]:
 
 
 def _canonicalize_tuple(x: Union[Sequence[int], int]) -> Tuple[int, ...]:
-  if isinstance(x, Iterable):
-    return tuple(x)
-  else:
-    return (x,)
+  return tuple(x) if isinstance(x, Iterable) else (x, )
 
 
 class DenseGeneral(Module):
@@ -220,7 +217,7 @@ def _conv_dimension_numbers(input_shape):
   lhs_spec = (0, ndim - 1) + tuple(range(1, ndim - 1))
   rhs_spec = (ndim - 1, ndim - 2) + tuple(range(0, ndim - 2))
   out_spec = lhs_spec
-  return lax.ConvDimensionNumbers(lhs_spec, rhs_spec, out_spec)
+  return lax.ConvDimensionNumbers(out_spec, rhs_spec, out_spec)
 
 
 PaddingLike = Union[str, int, Sequence[Union[int, Tuple[int, int]]]]
@@ -349,9 +346,7 @@ class _Conv(Module):
         # backward compatibility with using None as sentinel for
         # broadcast 1
         x = 1
-      if isinstance(x, int):
-        return (x,) * len(kernel_size)
-      return tuple(x)
+      return (x,) * len(kernel_size) if isinstance(x, int) else tuple(x)
 
     # Combine all input batch dimensions into a single leading batch axis.
     num_batch_dimensions = inputs.ndim - (len(kernel_size) + 1)

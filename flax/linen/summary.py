@@ -68,7 +68,7 @@ class _PartitionedArrayRepresentation(_ValueRepresentation):
     return cls(_ArrayRepresentation.from_array(partitioned.value), partitioned.names)
 
   def render(self):
-    return self.array_representation.render() + f' [dim]P[/dim]{self.names}'
+    return f'{self.array_representation.render()} [dim]P[/dim]{self.names}'
 
 @dataclasses.dataclass
 class _ObjectRepresentation(_ValueRepresentation):
@@ -253,7 +253,7 @@ def _get_module_table(
 
     collections: Set[str] = set(variables.keys())
     rows = []
-    all_paths: Set[Tuple[str, ...]] = set(call.path for call in calls)
+    all_paths: Set[Tuple[str, ...]] = {call.path for call in calls}
     visited_paths: Set[Tuple[str, ...]] = set()
 
     for c in calls:
@@ -293,7 +293,10 @@ def _get_module_variables(
   uses the `all_paths` set to determine if a variable belongs to a submodule or not."""
   module_variables = _get_path_variables(path, variables)
   submodule_variables: Any = {collection: {} for collection in module_variables}
-  all_keys = set(key for collection in module_variables.values() for key in collection)
+  all_keys = {
+      key
+      for collection in module_variables.values() for key in collection
+  }
 
   for key in all_keys:
     submodule_path = path + (key,)
@@ -341,7 +344,7 @@ def _render_table(table: Table, console_extras: Optional[Mapping[str, Any]]) -> 
   """A function that renders a Table to a string representation using rich."""
   console_kwargs = {'force_terminal': True, 'force_jupyter': False}
   if console_extras is not None:
-    console_kwargs.update(console_extras)
+    console_kwargs |= console_extras
 
   non_params_cols = 4
   rich_table = rich.table.Table(

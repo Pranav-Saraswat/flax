@@ -59,7 +59,7 @@ class Vocabulary:
     # Count all the tokens.
     counter = collections.Counter()
     for token_sequence in tokenized_sequences:
-      counter.update(token_sequence)
+      counter |= token_sequence
 
     # Add special tokens to the start of vocab.
     vocab = collections.OrderedDict()

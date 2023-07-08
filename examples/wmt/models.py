@@ -358,9 +358,7 @@ class Encoder(nn.Module):
       x = Encoder1DBlock(
           config=config, name=f'encoderblock_{lyr}')(x, encoder_mask)
 
-    encoded = nn.LayerNorm(dtype=config.dtype, name='encoder_norm')(x)
-
-    return encoded
+    return nn.LayerNorm(dtype=config.dtype, name='encoder_norm')(x)
 
 
 class Decoder(nn.Module):

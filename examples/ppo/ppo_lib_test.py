@@ -60,7 +60,7 @@ class TestEnvironmentPreprocessing(absltest.TestCase):
     games = ['BeamRider', 'Breakout', 'Pong',
              'Qbert', 'Seaquest', 'SpaceInvaders']
     ind = np.random.choice(len(games))
-    return games[ind] + "NoFrameskip-v4"
+    return f"{games[ind]}NoFrameskip-v4"
 
   def test_creation(self):
     frame_shape = (84, 84, 4)

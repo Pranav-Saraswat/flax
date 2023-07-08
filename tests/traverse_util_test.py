@@ -242,6 +242,7 @@ class ModelParamTraversalTest(absltest.TestCase):
     def filter_fn(name, _):
       names.append(name)  # track names passed to filter_fn for testing
       return 'kernel' in name
+
     traversal = traverse_util.ModelParamTraversal(filter_fn)
 
     values = list(traversal.iterate(params))
@@ -251,8 +252,8 @@ class ModelParamTraversalTest(absltest.TestCase):
     ]
     for model, expected_model in configs:
       self.assertEqual(values, [1, 3])
-      self.assertEqual(set(names), set([
-          '/x/kernel', '/x/bias', '/x/y/kernel', '/x/y/bias']))
+      self.assertEqual(set(names),
+                       {'/x/kernel', '/x/bias', '/x/y/kernel', '/x/y/bias'})
       new_model = traversal.update(lambda x: x + x, model)
       self.assertEqual(new_model, expected_model)
 

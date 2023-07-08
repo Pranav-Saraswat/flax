@@ -220,9 +220,8 @@ class Transformer(nn.Module):
       x = Encoder1DBlock(config)(x, deterministic=not train)
 
     x = nn.LayerNorm(dtype=config.dtype)(x)
-    logits = nn.Dense(
+    return nn.Dense(
         config.output_vocab_size,
         kernel_init=config.kernel_init,
-        bias_init=config.bias_init)(
-            x)
-    return logits
+        bias_init=config.bias_init,
+    )(x)

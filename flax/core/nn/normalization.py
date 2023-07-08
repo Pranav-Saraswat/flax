@@ -161,8 +161,9 @@ def group_norm(scope,
   if group_size is not None:
     channels = x.shape[-1]
     if channels % group_size != 0:
-      raise ValueError('Number of channels ({}) is not multiple of the '
-                       'group size ({}).'.format(channels, group_size))
+      raise ValueError(
+          f'Number of channels ({channels}) is not multiple of the group size ({group_size}).'
+      )
     num_groups = channels // group_size
 
   input_shape = x.shape
@@ -181,7 +182,7 @@ def group_norm(scope,
 
   x = x.reshape(input_shape)
 
-  feature_shape = tuple([1 for d in input_shape[:-1]] + [input_shape[-1]])
+  feature_shape = tuple([1 for _ in input_shape[:-1]] + [input_shape[-1]])
   if scale:
     x = x * scope.param('scale', scale_init, feature_shape)
   if bias:

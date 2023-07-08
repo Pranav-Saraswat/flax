@@ -35,9 +35,7 @@ def _get_shapes(pytree):
   return jax.tree_util.tree_map(lambda x: x.shape if hasattr(x, 'shape') else x, pytree)
 
 def _get_obj_repr_value(x):
-  if isinstance(x, summary._ObjectRepresentation):
-    return x.obj
-  return x
+  return x.obj if isinstance(x, summary._ObjectRepresentation) else x
 
 class ConvBlock(nn.Module):
   features: int

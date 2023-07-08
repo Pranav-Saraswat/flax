@@ -63,8 +63,9 @@ def pool(inputs, init, reduce_fn, window_shape, strides, padding):
     assert len(padding) == len(window_shape), (
         f"padding {padding} must specify pads for same number of dims as "
         f"window_shape {window_shape}")
-    assert all([len(x) == 2 for x in padding]), (
-        f"each entry in padding {padding} must be length 2")
+    assert all(
+        len(x) == 2
+        for x in padding), f"each entry in padding {padding} must be length 2"
     padding = ((0, 0),) + padding + ((0, 0),)
   y = lax.reduce_window(inputs, init, reduce_fn, dims, strides, padding)
   if is_single_input:
@@ -113,8 +114,7 @@ def max_pool(inputs, window_shape, strides=None, padding="VALID"):
   Returns:
     The maximum for each window slice.
   """
-  y = pool(inputs, -jnp.inf, lax.max, window_shape, strides, padding)
-  return y
+  return pool(inputs, -jnp.inf, lax.max, window_shape, strides, padding)
 
 
 def min_pool(inputs, window_shape, strides=None, padding="VALID"):

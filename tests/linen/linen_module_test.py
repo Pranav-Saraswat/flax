@@ -72,8 +72,7 @@ class Dense(nn.Module):
   def __call__(self, x):
     kernel = self.param('kernel', initializers.lecun_normal(),
                         (x.shape[-1], self.features))
-    y = jnp.dot(x, kernel)
-    return y
+    return jnp.dot(x, kernel)
 
 
 class ModuleTest(absltest.TestCase):
@@ -194,6 +193,8 @@ class ModuleTest(absltest.TestCase):
   def test_setup_dict_assignment(self):
     rngkey = jax.random.PRNGKey(0)
 
+
+
     class MLP(nn.Module):
 
       def setup(self):
@@ -205,8 +206,8 @@ class ModuleTest(absltest.TestCase):
 
       def __call__(self, x):
         y = self.lyrs1['a'](x)
-        z = self.lyrs1['b'](y)
-        return z
+        return self.lyrs1['b'](y)
+
 
     x = jnp.ones((10,))
     scope = Scope({}, {'params': rngkey}, mutable=['params'])
@@ -1486,14 +1487,17 @@ class ModuleTest(absltest.TestCase):
 
   def test_perturb_noop(self):
 
+
+
+
     class Foo(nn.Module):
       @nn.compact
       def __call__(self, x):
         x = nn.Dense(10)(x)
         x = self.perturb('before_multiply', x)
         x = 4 * x
-        x = self.perturb('after_multiply', x)
-        return x
+        return self.perturb('after_multiply', x)
+
 
     x = jax.random.uniform(jax.random.PRNGKey(1), shape=(10,))
     module = Foo()
@@ -2002,13 +2006,17 @@ class ModuleTest(absltest.TestCase):
     np.testing.assert_array_equal(y, jnp.ones((2,)))
 
   def test_nested_sequential_in_call(self):
+
+
+
     class Foo(nn.Module):
       def setup(self):
-        self.seq = nn.Sequential([nn.Dense(10) for i in range(10)])
+        self.seq = nn.Sequential([nn.Dense(10) for _ in range(10)])
 
       def __call__(self, x):
         # try calling only the first layer
         return self.seq.layers[0](x)
+
 
     module = Foo()
     variables = module.init(jax.random.PRNGKey(0), jnp.ones((1, 10)))

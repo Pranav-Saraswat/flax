@@ -100,10 +100,10 @@ def _train_sentencepiece(dataset: tf.data.Dataset,
   if jax.process_index() == 0:
     # Use an intermediate filename that is renamed to the target name to address
     # create and fill delays.
-    copy_rename_path = abs_model_path + '.rntmp'
-    tf.io.gfile.copy(model_fp.name + '.model', copy_rename_path, overwrite=True)
+    copy_rename_path = f'{abs_model_path}.rntmp'
+    tf.io.gfile.copy(f'{model_fp.name}.model', copy_rename_path, overwrite=True)
     tf.io.gfile.rename(copy_rename_path, abs_model_path, overwrite=True)
-    logging.info('copied %s to %s', model_fp.name + '.model', abs_model_path)
+    logging.info('copied %s to %s', f'{model_fp.name}.model', abs_model_path)
   else:
     while not tf.io.gfile.exists(abs_model_path):
       time.sleep(1)
@@ -118,9 +118,10 @@ def _load_sentencepiece_tokenizer(model_path: str,
   """Load a tf-text SentencePiece tokenizer from given model filepath."""
   with tf.io.gfile.GFile(model_path, 'rb') as model_fp:
     sp_model = model_fp.read()
-  sp_tokenizer = tftxt.SentencepieceTokenizer(
-      model=sp_model, add_bos=add_bos, add_eos=add_eos, reverse=reverse)
-  return sp_tokenizer
+  return tftxt.SentencepieceTokenizer(model=sp_model,
+                                      add_bos=add_bos,
+                                      add_eos=add_eos,
+                                      reverse=reverse)
 
 
 def load_or_train_tokenizer(dataset: tf.data.Dataset,

@@ -76,9 +76,10 @@ class RNNCellCompatibilityMeta(ABCMeta):
 
 def deprecation_method_decorator(f):
   def wrapper(*args, **kwargs):
-    if len(args) < 1 or not isinstance(args[0], RNNCellBase):
+    if not args or not isinstance(args[0], RNNCellBase):
       raise TypeError(LEGACY_UPDATE_MESSAGE)
     return f(*args, **kwargs)
+
   return wrapper
 
 class RNNCellBase(Module):
@@ -696,7 +697,7 @@ class RNN(Module):
   def __post_init__(self) -> None:
     if self.cell_size is not NEVER:
       raise TypeError(
-        f'The `cell_size` argument is no longer available`. ' + LEGACY_UPDATE_MESSAGE
+          f'The `cell_size` argument is no longer available`. {LEGACY_UPDATE_MESSAGE}'
       )
     return super().__post_init__()
 
@@ -829,10 +830,7 @@ class RNN(Module):
           x, seq_lengths, num_batch_dims=len(batch_dims), time_major=time_major), # type: ignore
         outputs)
 
-    if return_carry:
-      return carry, outputs
-    else:
-      return outputs
+    return (carry, outputs) if return_carry else outputs
 
 def _select_last_carry(sequence: A, seq_lengths: jnp.ndarray) -> A:
   last_idx = seq_lengths - 1
@@ -894,10 +892,7 @@ def flip_sequences(
     idxs = jnp.reshape(idxs, [1] * num_batch_dims + [max_steps]) # [1, ..., max_steps]
   idxs = (idxs + seq_lengths) % max_steps # [*batch, max_steps]
   idxs = _expand_dims_like(idxs, target=inputs) # [*batch, max_steps, *features]
-  # Select the inputs in flipped order.
-  outputs = jnp.take_along_axis(inputs, idxs, axis=time_axis)
-
-  return outputs
+  return jnp.take_along_axis(inputs, idxs, axis=time_axis)
 
 
 def _concatenate(a: Array, b: Array) -> Array:
@@ -971,7 +966,4 @@ class Bidirectional(Module):
     carry = (carry_forward, carry_backward)
     outputs = jax.tree_map(self.merge_fn, outputs_forward, outputs_backward)
 
-    if return_carry:
-      return carry, outputs
-    else:
-      return outputs
+    return (carry, outputs) if return_carry else outputs

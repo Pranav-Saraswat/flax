@@ -64,15 +64,14 @@ class Dropout(Module):
   def __call__(self, x, deterministic=False, rng=None):
     if self.rate == 0.:
       return x
-    keep_prob = 1. - self.rate
-
     if deterministic:
       return x
-    else:
-      if rng is None:
-        rng = self.scope.make_rng('dropout')
-      mask = random.bernoulli(rng, p=keep_prob, shape=x.shape)
-      return lax.select(mask, x / keep_prob, jnp.zeros_like(x))
+    if rng is None:
+      rng = self.scope.make_rng('dropout')
+    keep_prob = 1. - self.rate
+
+    mask = random.bernoulli(rng, p=keep_prob, shape=x.shape)
+    return lax.select(mask, x / keep_prob, jnp.zeros_like(x))
 
 
 class SoftmaxAttnWDropout(Module):
@@ -106,10 +105,7 @@ class RawDotProductAttention(Module):
     contract_dims = (
         tuple(range(n - 1, attn_weights.ndim)),
         tuple(range(0, n  - 1)))
-    y = lax.dot_general(
-        attn_weights, value,
-        (contract_dims, ((), ())))
-    return y
+    return lax.dot_general(attn_weights, value, (contract_dims, ((), ())))
 
 
 class DotProductAttention(Module):

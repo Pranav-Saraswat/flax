@@ -220,7 +220,7 @@ def filter_to_set(x: Filter) -> Set[str]:
   if x is False:
     return set()
   if isinstance(x, str):
-    return set([x])
+    return {x}
   if isinstance(x, typing.Collection):
     return set(x)
   raise errors.InvalidFilterError(x)
@@ -496,9 +496,7 @@ class Scope:
     self._populate_collections()
     xs = {k: v for k, v in self._variables.items()
           if in_filter(self.mutable, k)}
-    if config.flax_return_frozendict:
-      return freeze(xs)
-    return xs
+    return freeze(xs) if config.flax_return_frozendict else xs
 
   def variables(self) -> Union[VariableDict, Dict[str, Any]]:
     """Returns an immutable copy of the variables belonging to this Scope."""
@@ -635,7 +633,7 @@ class Scope:
     """
     if name is None:
       if prefix is None:
-        prefix = fn.__name__ + '_' if hasattr(fn, '__name__') else ''
+        prefix = f'{fn.__name__}_' if hasattr(fn, '__name__') else ''
       name = self.default_name(prefix)
     scope = self.push(name)
 
@@ -657,23 +655,14 @@ class Scope:
 
   def is_collection_empty(self, col: str) -> bool:
     """Returns true if the collection is empty."""
-    if col in self.root._variables:  # pylint: disable=protected-access
-      return not self.root._variables[col]  # pylint: disable=protected-access
-    return True
+    return not self.root._variables[col] if col in self.root._variables else True
 
   def _mutable_collection(self, col: str) -> MutableCollection:
     """Returns the collection `col` as a mutable object."""
     assert self.is_mutable_collection(col), f'Collection {col} is not mutable'
 
-    # The actual variable dict is stored in the root scope only, and subscopes
-    # hold references to subtrees relevant to them. This function ensures that
-    # the collections are created in the top-level Scope and we return the
-    # correct reference.
     if col not in self._variables:
-      if not self.parent:
-        # If this is the top-level Scope, just add an empty collection.
-        self._variables[col] = {}
-      else:
+      if self.parent:
         assert self.name is not None  # Only top-level Scope have name None.
         # Populate the parent collections recursively and obtain a reference to
         # the direct parent (which, by transitivity, is be a reference to a
@@ -687,19 +676,21 @@ class Scope:
         # variable dict.
         self._variables[col] = parent_col[self.name]
 
+      else:
+        # If this is the top-level Scope, just add an empty collection.
+        self._variables[col] = {}
     return self._variables[col]
 
   def _collection(self, col: str) -> Collection:
     """Returns a collection of variables of collection `col`."""
     if col not in self._variables:
-      if self.parent:
-        assert self.name is not None
-        parent_col = self.parent._collection(col)  # pylint: disable=protected-access
-        if self.name not in parent_col:
-          return FrozenDict()
-        self._variables[col] = parent_col[self.name]
-      else:
+      if not self.parent:
         return FrozenDict()
+      assert self.name is not None
+      parent_col = self.parent._collection(col)  # pylint: disable=protected-access
+      if self.name not in parent_col:
+        return FrozenDict()
+      self._variables[col] = parent_col[self.name]
     return self._variables[col]
 
   def has_rng(self, name: str) -> bool:
@@ -729,10 +720,7 @@ class Scope:
       doesn't exist in this scope.
     """
     variables = self._collection(col)
-    if name in variables:
-      return variables[name]
-    else:
-      return default
+    return variables[name] if name in variables else default
 
   def has_variable(self, col: str, name: str) -> bool:
     """Returns true if the given variable exists in this scope.
@@ -861,13 +849,10 @@ class Scope:
 
 
 def _unfreeze_variables(variables, mutable):
-  new_variables = {}
-  for key, value in variables.items():
-    if in_filter(mutable, key):
-      new_variables[key] = unfreeze(value)
-    else:
-      new_variables[key] = freeze(value)
-  return new_variables
+  return {
+      key: unfreeze(value) if in_filter(mutable, key) else freeze(value)
+      for key, value in variables.items()
+  }
 
 
 def bind(variables: VariableDict,
@@ -920,9 +905,9 @@ def apply(fn: Callable[..., Any],
 
   @functools.wraps(fn)
   def wrapper(variables: VariableDict,
-              *args,
-              rngs: Optional[RNGSequences] = None,
-              **kwargs) -> Union[Any, Tuple[Any, Union[VariableDict, Dict[str, Any]]]]:
+                *args,
+                rngs: Optional[RNGSequences] = None,
+                **kwargs) -> Union[Any, Tuple[Any, Union[VariableDict, Dict[str, Any]]]]:
     # Try to detect if user accidentally passed {'params': {'params': ...}.
     if 'params' in variables and isinstance(
         variables['params'],
@@ -932,10 +917,7 @@ def apply(fn: Callable[..., Any],
     with bind(variables, rngs=rngs, mutable=mutable,
               flags=flags).temporary() as root:
       y = fn(root, *args, **kwargs)
-    if mutable is not False:
-      return y, root.mutable_variables()
-    else:
-      return y
+    return (y, root.mutable_variables()) if mutable is not False else y
 
   return wrapper
 
@@ -1004,11 +986,7 @@ def lazy_init(fn: Callable[..., Any],
 def _is_valid_collection(col: VariableDict):
   if not isinstance(col, (FrozenDict, dict)):
     return False
-  for name in col.keys():
-    # Any value can be stored in a collection so only keys can be verified.
-    if not isinstance(name, str):
-      return False
-  return True
+  return all(isinstance(name, str) for name in col.keys())
 
 
 def _is_valid_variables(variables: VariableDict) -> bool:

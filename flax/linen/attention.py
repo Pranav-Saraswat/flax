@@ -301,9 +301,9 @@ class MultiHeadDotProductAttention(Module):
         # shape check of cached keys against query input
         expected_shape = tuple(batch_dims) + (1, num_heads, depth_per_head)
         if expected_shape != query.shape:
-          raise ValueError('Autoregressive cache shape error, '
-                           'expected query shape %s instead got %s.' %
-                           (expected_shape, query.shape))
+          raise ValueError(
+              f'Autoregressive cache shape error, expected query shape {expected_shape} instead got {query.shape}.'
+          )
         # update key, value caches with our new 1d spatial slices
         cur_index = cache_index.value
         indices = (0,) * len(batch_dims) + (cur_index, 0, 0)
@@ -342,8 +342,7 @@ class MultiHeadDotProductAttention(Module):
         deterministic=m_deterministic,
         dtype=self.dtype,
         precision=self.precision)  # pytype: disable=wrong-keyword-args
-    # back to the original inputs dimensions
-    out = DenseGeneral(
+    return DenseGeneral(
         features=features,
         axis=(-2, -1),
         kernel_init=self.kernel_init,
@@ -353,9 +352,8 @@ class MultiHeadDotProductAttention(Module):
         param_dtype=self.param_dtype,
         precision=self.precision,
         dot_general=self.out_dot_general,
-        name='out', # type: ignore[call-arg]
+        name='out',  # type: ignore[call-arg]
     )(x)
-    return out
 
 
 class SelfAttention(MultiHeadDotProductAttention):

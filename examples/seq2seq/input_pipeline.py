@@ -123,7 +123,7 @@ class CharacterTable:
       key = tuple(sorted((random.randint(0, 99), random.randint(0, max_digit))))
       inputs = f'{key[0]}+{key[1]}'
       # Preprend output by the decoder's start token.
-      outputs = '=' + str(key[0] + key[1])
+      outputs = f'={str(key[0] + key[1])}'
       yield (inputs, outputs)
 
   def get_batch(self, batch_size: int) -> Dict[str, np.ndarray]:

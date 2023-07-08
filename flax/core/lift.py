@@ -419,16 +419,15 @@ def vjp(
         y = fn(scope, *args)
         aux = ()
       return y, (aux, repack_fn(scope))
+
     y, bwd, (aux, out_vars) = jax.vjp(
         wrapper, vjp_vars, *args,
         reduce_axes=reduce_axes, has_aux=True)
     treedef = jax.tree_util.tree_structure(scope)
     bwd = jax.tree_util.Partial(
         functools.partial(_bwd_wrapper, treedef), bwd)
-    if has_aux:
-      return (y, bwd, aux), out_vars
-    else:
-      return (y, bwd), out_vars
+    return ((y, bwd, aux), out_vars) if has_aux else ((y, bwd), out_vars)
+
   return pack(
       inner, (vjp_variables, variables), (variables,), (rngs,),
       name='vjp',
@@ -1232,10 +1231,7 @@ def _hashable_filter(x):
   """Hashable version of CollectionFilter."""
   if isinstance(x, Iterable):
     return tuple(x)  # convert un-hashable list & sets to tuple
-  if isinstance(x, DenyList):
-    return DenyList(_hashable_filter(
-        x.deny))  # convert inner filter recursively
-  return x
+  return DenyList(_hashable_filter(x.deny)) if isinstance(x, DenyList) else x
 
 
 def jit(fn: Callable[..., Any],

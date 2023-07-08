@@ -107,7 +107,7 @@ def generate_autosummary_content(name: str, obj: Any, parent: Any,
     def get_modules(obj: Any) -> Tuple[List[str], List[str]]:
         items: List[str] = []
         for _, modname, _ispkg in ag.pkgutil.iter_modules(obj.__path__):
-            fullname = name + '.' + modname
+            fullname = f'{name}.{modname}'
             try:
                 module = ag.import_module(fullname)
                 if module and hasattr(module, '__sphinx_mock__'):

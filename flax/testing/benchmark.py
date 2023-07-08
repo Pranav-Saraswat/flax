@@ -96,7 +96,7 @@ def _get_tensorboard_scalars(path):
 
   data_by_key = {}
   for tag, wall_time, step, value in data:
-    if not tag in data_by_key:
+    if tag not in data_by_key:
       data_by_key[tag] = []
     data_by_key[tag].append((wall_time, step, value))
   return data_by_key
@@ -228,7 +228,7 @@ class Benchmark(absltest.TestCase):
 
     # Prefix the name with the class name.
     class_name = type(calling_class).__name__
-    name = '{}.{}'.format(class_name, name)
+    name = f'{class_name}.{name}'
     return name
 
   def _update_reported_name(self):
@@ -273,9 +273,7 @@ class Benchmark(absltest.TestCase):
     results_str = json.dumps(results)
     logging.info(results_str)
 
-    # Maybe save results as a file for pickup by CI / monitoring frameworks.
-    benchmark_output_dir = FLAGS.benchmark_output_dir
-    if benchmark_output_dir:
-      filename = os.path.join(benchmark_output_dir, name + '.json')
+    if benchmark_output_dir := FLAGS.benchmark_output_dir:
+      filename = os.path.join(benchmark_output_dir, f'{name}.json')
       with io.GFile(filename, 'w') as fout:
         fout.write(results_str)
